@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
         builtinWallpaper = null
         repository.setWallpaperUri(wallpaperUri)
         repository.setBuiltinWallpaper(null)
+        applySelectedWallpaperToSystem()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -313,6 +314,7 @@ class MainActivity : ComponentActivity() {
         wallpaperUri = null
         repository.setBuiltinWallpaper(wallpaper)
         repository.setWallpaperUri(null)
+        applySelectedWallpaperToSystem()
     }
 
     private fun applySelectedWallpaperToSystem() {
@@ -326,7 +328,14 @@ class MainActivity : ComponentActivity() {
                     selectedUri != null -> contentResolver.openInputStream(android.net.Uri.parse(selectedUri))
                     else -> null
                 } ?: error("Selected wallpaper could not be opened")
-                input.use { WallpaperManager.getInstance(applicationContext).setStream(it) }
+                input.use {
+                    WallpaperManager.getInstance(applicationContext).setStream(
+                        it,
+                        null,
+                        true,
+                        WallpaperManager.FLAG_SYSTEM
+                    )
+                }
             }
             lifecycleScope.launch(Dispatchers.Main) {
                 val message = if (result.isSuccess) "Device wallpaper applied" else "Could not apply the device wallpaper"

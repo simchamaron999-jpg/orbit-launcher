@@ -182,19 +182,18 @@ fun LauncherSettingsScreen(
                     SettingsCategory.QUICK -> {
                         item { SectionTitle("Home Presets") }
                         item {
-                            Row(Modifier.padding(horizontal = 24.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                PresetButton("Minimalist", onClick = {
-                                    onIconScale(IconScale.EXPRESSIVE)
-                                    onCenterSize(CenterSize.LARGE)
-                                })
-                                PresetButton("Balanced", onClick = {
-                                    onIconScale(IconScale.COMFORTABLE)
-                                    onCenterSize(CenterSize.BALANCED)
-                                })
-                                PresetButton("Dense", onClick = {
-                                    onIconScale(IconScale.COMPACT)
-                                    onCenterSize(CenterSize.SMALL)
-                                })
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                item { Spacer(Modifier.size(24.dp, 1.dp)) }
+                                item { PresetButton("Minimalist") { onIconScale(IconScale.EXPRESSIVE); onCenterSize(CenterSize.LARGE); onLabelsVisible(false) } }
+                                item { PresetButton("Balanced") { onIconScale(IconScale.COMFORTABLE); onCenterSize(CenterSize.BALANCED); onLabelsVisible(true) } }
+                                item { PresetButton("Dense") { onIconScale(IconScale.COMPACT); onCenterSize(CenterSize.SMALL); onLabelsVisible(false) } }
+                                item { PresetButton("Focus") { onIconScale(IconScale.EXPRESSIVE); onCenterSize(CenterSize.BALANCED); onLabelsVisible(false); onAmbientBackdrop(AmbientBackdrop.DUSK) } }
+                                item { PresetButton("Night") { onAppearanceMode(AppearanceMode.DARK); onAmbientBackdrop(AmbientBackdrop.ORBIT); onLabelsVisible(false) } }
+                                item { PresetButton("Bright") { onAppearanceMode(AppearanceMode.LIGHT); onAmbientBackdrop(AmbientBackdrop.CLAY); onLabelsVisible(true) } }
+                                item { Spacer(Modifier.size(24.dp, 1.dp)) }
                             }
                         }
                         item { SectionTitle("Visuals") }
@@ -215,6 +214,31 @@ fun LauncherSettingsScreen(
                         }
                         item { ChoiceChips(CenterSize.entries.toList(), centerSize, { it.title }, onCenterSize) }
                         item { SettingSwitch("App names", "Hide for a minimal icon-only orbit", labelsVisible, onLabelsVisible) }
+                        item { SectionTitle("Quick customization") }
+                        item {
+                            ListItem(
+                                leadingContent = { Icon(Icons.Outlined.Settings, null) },
+                                headlineContent = { Text("Appearance") },
+                                supportingContent = { Text("Match system, keep light, or keep dark") }
+                            )
+                        }
+                        item { ChoiceChips(AppearanceMode.entries.toList(), appearanceMode, { it.title }, onAppearanceMode) }
+                        item {
+                            ListItem(
+                                leadingContent = { Icon(Icons.Outlined.Image, null) },
+                                headlineContent = { Text("Ambient backdrop") },
+                                supportingContent = { Text("Used when no wallpaper is selected") }
+                            )
+                        }
+                        item { ChoiceChips(AmbientBackdrop.entries.toList(), ambientBackdrop, { it.title }, onAmbientBackdrop) }
+                        item {
+                            ListItem(
+                                leadingContent = { Icon(Icons.Outlined.Gesture, null) },
+                                headlineContent = { Text("App launch gesture") },
+                                supportingContent = { Text("Choose the gesture that opens an orbit icon") }
+                            )
+                        }
+                        item { ChoiceChips(AppTrigger.entries.toList(), appTrigger, { it.title }, onAppTrigger) }
                     }
 
                     SettingsCategory.AI -> {
@@ -464,7 +488,7 @@ fun LauncherSettingsScreen(
                         item {
                             ListItem(
                                 headlineContent = { Text("Version") },
-                                supportingContent = { Text("0.7.3") }
+                                supportingContent = { Text("0.7.4") }
                             )
                         }
                         item {

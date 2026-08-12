@@ -1,18 +1,19 @@
-# Orbit Launcher 0.7.3
+# Orbit Launcher 0.7.4
 
 **Orbit Launcher** is an Android-only home launcher written in Kotlin and Jetpack Compose. It uses a Material You 3 interface to place launchable apps around a central clock or widget surface, with configurable pages, gestures, wallpapers, widgets, conventional voice launching, and optional BYOK AI assistance.
 
 ## Release highlights
 
-| Feature | Behaviour in 0.7.3 |
+| Feature | Behaviour in 0.7.4 |
 |---|---|
 | **Independent home pages** | Create up to eight swipeable pages. Each page can use **Recent**, **Most used**, **Favourites**, or **All apps** as its source. |
 | **Readable app density** | Every page has an explicit visible-app target: **8, 12, 16, 20, 24, or 32**. The orbit uses the selected limit before applying responsive icon sizing. |
-| **Targeted Material You redesign** | The central clock uses a calmer elevated surface, a compact floating action strip for voice, AI, and search, and clearer page indicators. |
+| **Control layout** | The top-right Customize control is now a gear. AI sits above the central clock, microphone and app search sit below it, and a four-icon navigation dock is positioned below the orbit. |
+| **Black orbit icons** | App marks and labels in the orbit use a consistent black monochrome treatment over light pods. |
 | **AI voice requests** | The sparkle button opens voice capture and sends the spoken request only to the BYOK provider configured by the user. App-launch replies are restricted to packages discovered on the device. |
 | **Supported BYOK providers** | OpenAI, Anthropic, Google Gemini, OpenRouter, and a custom **HTTPS** OpenAI-compatible endpoint. **OmniRoute is not offered.** |
 | **Wallpaper contrast** | The settings and navigation controls sample the active wallpaper and use light controls on dark imagery, or dark controls on light imagery. |
-| **System wallpaper action** | A selected gallery or user wallpaper can be applied to the Android system wallpaper through **Settings → Wallpapers → Apply as device wallpaper**. |
+| **System wallpaper sync** | Every selected gallery or user wallpaper is automatically applied to the Android system wallpaper, so it also appears behind Recent Apps. The manual Apply action remains available. |
 | **Templates** | Save the current layout as a local template, then install or remove saved templates in **Settings → Templates**. |
 
 ## First-time setup

@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.NavigateBefore
+import androidx.compose.material.icons.automirrored.outlined.NavigateNext
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -176,12 +178,29 @@ fun OrbitHomeScreen(
             onClick = onSettings
         ) {
             Icon(
-                Icons.Outlined.Tune,
-                contentDescription = "Launcher settings",
+                Icons.Outlined.Settings,
+                contentDescription = "Customize Orbit",
                 tint = controlTint,
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        // Four-icon navigation dock: intentionally below the orbit, above the Android navigation area.
+        OrbitShortcutDock(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 42.dp),
+            onPreviousPage = { page = (page - 1).coerceAtLeast(0) },
+            onAllApps = onOpenSearch,
+            onFavorites = {
+                safePages.indexOfFirst { it.source == RingMode.FAVORITES }
+                    .takeIf { it >= 0 }
+                    ?.let { page = it }
+            },
+            onNextPage = { page = (page + 1).coerceAtMost(pageCount - 1) },
+            tint = controlTint,
+            container = controlContainer
+        )
 
         // Central Area
         BoxWithConstraints(
@@ -348,15 +367,17 @@ private fun OrbitAppSlot(
         Surface(
             modifier = Modifier.size(podSize),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
-            tonalElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
+                            color = Color.White.copy(alpha = 0.92f),
+                tonalElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.12f))
+
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(podSize * 0.18f)) {
                 if (app.icon != null) {
                     AndroidView(factory = { context ->
                         android.widget.ImageView(context).apply {
                             setImageDrawable(app.icon)
+                            setColorFilter(android.graphics.Color.BLACK, android.graphics.PorterDuff.Mode.SRC_IN)
                             scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                         }
                     }, modifier = Modifier.fillMaxSize())
@@ -367,7 +388,7 @@ private fun OrbitAppSlot(
             Text(
                 text = app.label,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = Color.White,
+                color = Color.Black,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
@@ -492,22 +513,31 @@ private fun CentralSurface(
                 }
             }
 
-            // Refined Quick Action Row (Floating Glass Style)
+            // The AI control is deliberately above the clock; microphone and search stay below it.
+            OrbitControlButton(
+                icon = Icons.Outlined.AutoAwesome,
+                contentDescription = "Ask Orbit with AI",
+                onClick = onAiAssistant,
+                tint = Color(0xFF111111),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+                    .background(Color.White.copy(alpha = 0.88f), CircleShape)
+            )
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 16.dp),
                 shape = CircleShape,
-                color = controlContainer.copy(alpha = 0.45f),
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, controlTint.copy(alpha = 0.15f))
+                color = Color.White.copy(alpha = 0.88f),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.12f))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OrbitControlButton(Icons.Outlined.Mic, "Voice launch", onVoice, controlTint)
-                    OrbitControlButton(Icons.Outlined.AutoAwesome, "AI Assistant", onAiAssistant, controlTint)
-                    OrbitControlButton(Icons.Outlined.Search, "App search", onSearch, controlTint)
+                    OrbitControlButton(Icons.Outlined.Mic, "Voice launch", onVoice, Color(0xFF111111))
+                    OrbitControlButton(Icons.Outlined.Search, "App search", onSearch, Color(0xFF111111))
                 }
             }
         }
@@ -519,13 +549,56 @@ private fun OrbitControlButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
-    tint: Color
+    tint: Color,
+    modifier: Modifier = Modifier
 ) {
     IconButton(
         onClick = onClick,
-        modifier = Modifier.size(44.dp)
+        modifier = modifier.size(44.dp)
     ) {
         Icon(icon, contentDescription, modifier = Modifier.size(22.dp), tint = tint.copy(alpha = 0.9f))
+    }
+}
+
+@Composable
+private fun OrbitShortcutDock(
+    modifier: Modifier = Modifier,
+    onPreviousPage: () -> Unit,
+    onAllApps: () -> Unit,
+    onFavorites: () -> Unit,
+    onNextPage: () -> Unit,
+    tint: Color,
+    container: Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(24.dp),
+        color = container.copy(alpha = 0.82f),
+        border = androidx.compose.foundation.BorderStroke(0.5.dp, tint.copy(alpha = 0.16f)),
+        tonalElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            DockButton(Icons.AutoMirrored.Outlined.NavigateBefore, "Previous page", onPreviousPage, tint)
+            DockButton(Icons.Outlined.GridView, "All apps", onAllApps, tint)
+            DockButton(Icons.Outlined.FavoriteBorder, "Favorites", onFavorites, tint)
+            DockButton(Icons.AutoMirrored.Outlined.NavigateNext, "Next page", onNextPage, tint)
+        }
+    }
+}
+
+@Composable
+private fun DockButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    onClick: () -> Unit,
+    tint: Color
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(42.dp)) {
+        Icon(icon, description, tint = tint, modifier = Modifier.size(22.dp))
     }
 }
 
