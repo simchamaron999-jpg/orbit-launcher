@@ -1,30 +1,33 @@
-# Orbit Launcher 0.7.2
+# Orbit Launcher 0.7.3
 
-**Orbit Launcher** is a native Android-only home launcher, built with Kotlin, Jetpack Compose, and Material You 3. It places app sources around a central clock or widget surface, combining a distinctive radial interface with practical launcher controls, wallpaper customization, widgets, gesture actions, and optional bring-your-own-key AI assistance.
+**Orbit Launcher** is an Android-only home launcher written in Kotlin and Jetpack Compose. It uses a Material You 3 interface to place launchable apps around a central clock or widget surface, with configurable pages, gestures, wallpapers, widgets, conventional voice launching, and optional BYOK AI assistance.
 
 ## Release highlights
 
-| Feature | Description |
+| Feature | Behaviour in 0.7.3 |
 |---|---|
-| **Independent home pages** | Create up to eight swipeable pages and give each one its own source: **Recent**, **Most used**, **Favourites**, or **All apps**. |
-| **Configurable app density** | Each page has a selectable visible app limit (8, 12, 16, 20, 24, or 32). Orbit automatically scales icon sizes to maintain a clean, readable radial layout regardless of density. |
-| **Wallpaper-adaptive controls** | Orbit samples the active wallpaper luminance. The page indicator and settings control become light on dark wallpapers and dark on light wallpapers. |
-| **Refined centre controls** | The voice, Ask Orbit, and search controls now use a visually consistent circular icon treatment. |
-| **AI voice requests** | Tapping **Ask Orbit** opens the microphone, transcribes the request, and sends it to the selected BYOK provider. For an app-launch request, the AI can select and open an installed app; otherwise, its concise reply is shown in the centre surface. |
-| **Supported BYOK providers** | OpenAI, Anthropic, Google Gemini, OpenRouter, and a custom OpenAI-compatible endpoint. **OmniRoute is not offered.** |
-| **Community Templates** | Save, share, and install custom launcher layouts. Templates include page sources, visible app limits, clock styles, and visual themes. |
-| **Material You customization** | Choose the central clock or widget, clock style, circle size, app-label visibility, app trigger, gesture actions, wallpapers, visual theme, and more. |
-| **Android launcher features** | Voice app launching, AppWidget hosting, full-screen category settings, usage-access support, portrait lock, haptics, and first-run onboarding. |
+| **Independent home pages** | Create up to eight swipeable pages. Each page can use **Recent**, **Most used**, **Favourites**, or **All apps** as its source. |
+| **Readable app density** | Every page has an explicit visible-app target: **8, 12, 16, 20, 24, or 32**. The orbit uses the selected limit before applying responsive icon sizing. |
+| **Targeted Material You redesign** | The central clock uses a calmer elevated surface, a compact floating action strip for voice, AI, and search, and clearer page indicators. |
+| **AI voice requests** | The sparkle button opens voice capture and sends the spoken request only to the BYOK provider configured by the user. App-launch replies are restricted to packages discovered on the device. |
+| **Supported BYOK providers** | OpenAI, Anthropic, Google Gemini, OpenRouter, and a custom **HTTPS** OpenAI-compatible endpoint. **OmniRoute is not offered.** |
+| **Wallpaper contrast** | The settings and navigation controls sample the active wallpaper and use light controls on dark imagery, or dark controls on light imagery. |
+| **System wallpaper action** | A selected gallery or user wallpaper can be applied to the Android system wallpaper through **Settings → Wallpapers → Apply as device wallpaper**. |
+| **Templates** | Save the current layout as a local template, then install or remove saved templates in **Settings → Templates**. |
 
-## Page configuration
+## First-time setup
 
-Open **Settings → Apps** to add, remove, and configure home pages. A new installation starts with separate **Recent**, **Most used**, and **Favourites** pages. Swipe left or right on the home screen to change pages. Recent and Most Used use Android usage statistics once the corresponding system permission has been allowed in **Settings → System**.
+Set Orbit as the default Home app from **Settings → System → Set as default home**. Grant **Usage statistics** only if you want accurate Recent and Most used pages. Grant microphone access only when using voice launch or Ask Orbit.
 
-## AI voice setup
+To use Ask Orbit, open **Settings → AI Engine**, choose a provider, and enter your own API key. The app does not include any developer API key. The selected provider receives the voice request and the installed-app list only as needed to resolve the request.
 
-Open **Settings → AI Engine**, select a provider, and enter your own API key. Keys are saved only in the app's private preferences. Tap the sparkle icon at the bottom of the centre circle, speak naturally, and Orbit will use the configured provider to interpret the request. A network connection is required for the AI provider request; the separate conventional voice-launch control does not require an AI key.
+> The AI feature needs an active network connection and a valid user-provided API key. Network and provider errors are shown in the central surface.
 
-## Build and installation
+## Privacy and security
+
+Orbit requests only the permissions needed for its launcher features: microphone access for user-initiated voice capture, usage statistics for optional usage-based pages, internet access for opted-in BYOK AI requests, and wallpaper access for the explicit system-wallpaper action. App data and user preferences are private to the app; automated cloud backup and device-transfer extraction are disabled to reduce the risk of API-key exposure. The app permits HTTPS traffic only.
+
+## Build
 
 ```bash
 export ANDROID_HOME=/path/to/Android/Sdk
@@ -34,19 +37,20 @@ export JAVA_HOME=/path/to/jdk-17
 
 The debug APK is produced at `app/build/outputs/apk/debug/app-debug.apk`.
 
-## Project links
+## Project information
 
 | Item | Value |
 |---|---|
+| **Android application ID** | `com.sm.orbitlauncher` |
 | **Creator** | Simcha Maron |
-| **Contact** | simchamaronapp@gmail.app |
-| **Repository** | <https://github.com/simchamaron999-jpg/orbit-launcher> |
+| **Contact** | [simchamaronapp@gmail.app](mailto:simchamaronapp@gmail.app) |
+| **Source repository** | <https://github.com/simchamaron999-jpg/orbit-launcher> |
 | **License** | Apache-2.0 |
 
 ## References
 
-[1]: https://developer.android.com/develop/ui/views/appwidgets/host "Build a widget host — Android Developers"
-[2]: https://developer.android.com/develop/ui/compose "Jetpack Compose — Android Developers"
+[1]: https://developer.android.com/privacy-and-security/security-tips "Android security checklist"
+[2]: https://developer.android.com/guide/components/intents-filters "Android intents and intent filters"
 [3]: https://m3.material.io/ "Material Design 3"
 
 [1] [2] [3]

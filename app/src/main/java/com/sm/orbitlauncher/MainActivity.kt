@@ -1,6 +1,8 @@
 package com.sm.orbitlauncher
 
 import android.Manifest
+import android.app.SearchManager
+import android.app.WallpaperManager
 import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,13 +11,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
@@ -26,7 +26,10 @@ import com.sm.orbitlauncher.ui.OrbitHomeScreen
 import com.sm.orbitlauncher.ui.theme.OrbitTheme
 import com.sm.orbitlauncher.voice.VoiceAppLauncher
 import com.sm.orbitlauncher.widget.OrbitWidgetHost
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: LauncherRepository
@@ -38,11 +41,11 @@ class MainActivity : ComponentActivity() {
     private var launcherPages by mutableStateOf<List<LauncherPage>>(emptyList())
     private var launcherTemplates by mutableStateOf<List<LauncherTemplate>>(emptyList())
     private var appsByPage by mutableStateOf<List<List<LaunchableApp>>>(emptyList())
+    
     private var centerMode by mutableStateOf(CenterMode.CLOCK)
     private var centerSize by mutableStateOf(CenterSize.BALANCED)
     private var centerActions by mutableStateOf<Map<CenterGesture, CenterAction>>(emptyMap())
     private var appTrigger by mutableStateOf(AppTrigger.TAP)
-    private var orbitCapacity by mutableStateOf(OrbitCapacity.BALANCED)
     private var rotationSpeed by mutableStateOf(RotationSpeed.BALANCED)
     private var iconScale by mutableStateOf(IconScale.COMFORTABLE)
     private var labelsVisible by mutableStateOf(true)
@@ -57,36 +60,31 @@ class MainActivity : ComponentActivity() {
     private var showSettings by mutableStateOf(false)
     private var usageAccess by mutableStateOf(false)
     private var searchRequestToken by mutableIntStateOf(0)
-    private var pendingWidgetId = -1
-    private var pendingWidgetPlacement = WidgetPlacement.CENTRE
-    private var voiceRequestMode = VoiceRequestMode.APP_LAUNCH
-
+    
     private var aiProvider by mutableStateOf(AiProvider.OPENAI)
     private var aiApiKey by mutableStateOf("")
     private var aiEndpoint by mutableStateOf<String?>(null)
     private var clockStyle by mutableStateOf(ClockStyle.EXPRESSIVE)
 
-    private val microphonePermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+    private var pendingWidgetId = -1
+    private var pendingWidgetPlacement = WidgetPlacement.CENTRE
+    private var voiceRequestMode = VoiceRequestMode.APP_LAUNCH
+
+    private val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startVoiceRequest() else showVoiceFailure()
     }
 
-    private val widgetPicker = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result -> handleWidgetPickResult(result.resultCode, result.data) }
+    private val widgetPicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        handleWidgetPickResult(result.resultCode, result.data)
+    }
 
-    private val widgetConfiguration = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result -> handleWidgetConfigurationResult(result.resultCode, result.data) }
+    private val widgetConfiguration = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        handleWidgetConfigurationResult(result.resultCode, result.data)
+    }
 
-    private val homeRoleRequest = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { /* Android retains the selected Home role. */ }
+    private val homeRoleRequest = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
-    private val wallpaperPicker = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
+    private val wallpaperPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri ?: return@registerForActivityResult
         runCatching { contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         wallpaperUri = uri.toString()
@@ -101,6 +99,7 @@ class MainActivity : ComponentActivity() {
         repository = LauncherRepository(applicationContext)
         widgetHost = OrbitWidgetHost(applicationContext, repository)
         voiceLauncher = VoiceAppLauncher(applicationContext)
+        
         loadPreferences()
         refreshApps()
 
@@ -158,50 +157,24 @@ class MainActivity : ComponentActivity() {
                         aiApiKey = aiApiKey,
                         aiEndpoint = aiEndpoint,
                         clockStyle = clockStyle,
+                        templates = launcherTemplates,
                         onDismiss = { showSettings = false },
                         onUpdatePage = ::updatePage,
                         onAddPage = ::addPage,
                         onRemovePage = ::removePage,
-                        onCenterMode = { mode ->
-                            centerMode = mode
-                            repository.setSelectedCenterMode(mode)
-                        },
-                        onCenterSize = { size ->
-                            centerSize = size
-                            repository.setSelectedCenterSize(size)
-                        },
+                        onCenterMode = { mode -> centerMode = mode; repository.setSelectedCenterMode(mode) },
+                        onCenterSize = { size -> centerSize = size; repository.setSelectedCenterSize(size) },
                         onCenterAction = { gesture, action ->
                             centerActions = centerActions + (gesture to action)
                             repository.setCenterAction(gesture, action)
                         },
-                        onAppTrigger = { trigger ->
-                            appTrigger = trigger
-                            repository.setAppTrigger(trigger)
-                        },
-                        onRotationSpeed = { speed ->
-                            rotationSpeed = speed
-                            repository.setRotationSpeed(speed)
-                        },
-                        onIconScale = { scale ->
-                            iconScale = scale
-                            repository.setIconScale(scale)
-                        },
-                        onLabelsVisible = { visible ->
-                            labelsVisible = visible
-                            repository.setLabelsVisible(visible)
-                        },
-                        onHapticsEnabled = { enabled ->
-                            hapticsEnabled = enabled
-                            repository.setHapticsEnabled(enabled)
-                        },
-                        onAppearanceMode = { mode ->
-                            appearanceMode = mode
-                            repository.setAppearanceMode(mode)
-                        },
-                        onAmbientBackdrop = { backdrop ->
-                            ambientBackdrop = backdrop
-                            repository.setAmbientBackdrop(backdrop)
-                        },
+                        onAppTrigger = { trigger -> appTrigger = trigger; repository.setAppTrigger(trigger) },
+                        onRotationSpeed = { speed -> rotationSpeed = speed; repository.setRotationSpeed(speed) },
+                        onIconScale = { scale -> iconScale = scale; repository.setIconScale(scale) },
+                        onLabelsVisible = { visible -> labelsVisible = visible; repository.setLabelsVisible(visible) },
+                        onHapticsEnabled = { enabled -> hapticsEnabled = enabled; repository.setHapticsEnabled(enabled) },
+                        onAppearanceMode = { mode -> appearanceMode = mode; repository.setAppearanceMode(mode) },
+                        onAmbientBackdrop = { backdrop -> ambientBackdrop = backdrop; repository.setAmbientBackdrop(backdrop) },
                         onBuiltinWallpaper = ::selectBuiltinWallpaper,
                         onPickWallpaperPhoto = { wallpaperPicker.launch(arrayOf("image/*")) },
                         onClearWallpaper = {
@@ -210,6 +183,7 @@ class MainActivity : ComponentActivity() {
                             repository.setWallpaperUri(null)
                             repository.setBuiltinWallpaper(null)
                         },
+                        onApplySystemWallpaper = ::applySelectedWallpaperToSystem,
                         onPickWidget = { startWidgetPicker(WidgetPlacement.CENTRE) },
                         onRemoveWidget = {
                             widgetHost.removeWidget(widgetId)
@@ -223,28 +197,12 @@ class MainActivity : ComponentActivity() {
                             repository.removeTileWidgetId(id)
                             tileWidgetIds = repository.tileWidgetIds()
                         },
-                        onUpdateTileWidgets = { /* Not implemented in basic sheet */ },
-                        onToggleFavorite = {
-                            repository.toggleFavorite(it.packageName)
-                            refreshPageApps()
-                        },
-                        onAiProvider = { provider ->
-                            aiProvider = provider
-                            repository.setAiProvider(provider)
-                        },
-                        onAiApiKey = { key ->
-                            aiApiKey = key
-                            repository.setAiApiKey(key)
-                        },
-                        onAiEndpoint = { endpoint ->
-                            aiEndpoint = endpoint
-                            repository.setAiEndpoint(endpoint)
-                        },
-                        onClockStyle = { style ->
-                            clockStyle = style
-                            repository.setClockStyle(style)
-                        },
-                        templates = launcherTemplates,
+                        onUpdateTileWidgets = { },
+                        onToggleFavorite = { repository.toggleFavorite(it.packageName); refreshPageApps() },
+                        onAiProvider = { p -> aiProvider = p; repository.setAiProvider(p) },
+                        onAiApiKey = { k -> aiApiKey = k; repository.setAiApiKey(k) },
+                        onAiEndpoint = { e -> aiEndpoint = e; repository.setAiEndpoint(e) },
+                        onClockStyle = { s -> clockStyle = s; repository.setClockStyle(s) },
                         onAddTemplate = ::addTemplate,
                         onInstallTemplate = ::installTemplate,
                         onRemoveTemplate = ::removeTemplate,
@@ -266,6 +224,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        if (::voiceLauncher.isInitialized) voiceLauncher.cancel()
         if (::widgetHost.isInitialized) widgetHost.onActivityPaused()
         super.onPause()
     }
@@ -279,11 +238,9 @@ class MainActivity : ComponentActivity() {
         launcherPages = repository.pages()
         launcherTemplates = repository.templates()
         centerMode = repository.selectedCenterMode()
-        centerMode = repository.selectedCenterMode()
         centerSize = repository.selectedCenterSize()
         centerActions = CenterGesture.entries.associateWith(repository::centerAction)
         appTrigger = repository.appTrigger()
-        orbitCapacity = repository.orbitCapacity()
         rotationSpeed = repository.rotationSpeed()
         iconScale = repository.iconScale()
         labelsVisible = repository.labelsVisible()
@@ -308,11 +265,7 @@ class MainActivity : ComponentActivity() {
 
     private fun addPage() {
         if (launcherPages.size >= 8) return
-        val newPage = LauncherPage(
-            id = "page-${System.currentTimeMillis()}",
-            name = "All apps",
-            source = RingMode.ALL_APPS
-        )
+        val newPage = LauncherPage(id = "page-${System.currentTimeMillis()}", name = "All apps", source = RingMode.ALL_APPS)
         launcherPages = launcherPages + newPage
         repository.setPages(launcherPages)
         refreshPageApps()
@@ -362,6 +315,26 @@ class MainActivity : ComponentActivity() {
         repository.setWallpaperUri(null)
     }
 
+    private fun applySelectedWallpaperToSystem() {
+        val selectedBuiltin = builtinWallpaper
+        val selectedUri = wallpaperUri
+        if (selectedBuiltin == null && selectedUri == null) return
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = runCatching {
+                val input = when {
+                    selectedBuiltin != null -> resources.openRawResource(selectedBuiltin.resourceId)
+                    selectedUri != null -> contentResolver.openInputStream(android.net.Uri.parse(selectedUri))
+                    else -> null
+                } ?: error("Selected wallpaper could not be opened")
+                input.use { WallpaperManager.getInstance(applicationContext).setStream(it) }
+            }
+            lifecycleScope.launch(Dispatchers.Main) {
+                val message = if (result.isSuccess) "Device wallpaper applied" else "Could not apply the device wallpaper"
+                Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun performCenterAction(action: CenterAction) {
         when (action) {
             CenterAction.NONE -> Unit
@@ -377,9 +350,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openSearch() {
-        searchRequestToken += 1
-    }
+    private fun openSearch() { searchRequestToken += 1 }
 
     private fun handleWidgetPickResult(resultCode: Int, data: Intent?) {
         val selectedId = widgetHost.selectedWidgetId(data).takeIf { it >= 0 } ?: pendingWidgetId
@@ -422,27 +393,29 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshApps() {
-        allApps = repository.installedApps()
-        refreshPageApps()
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val apps = repository.installedApps()
+            lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                allApps = apps
+                refreshPageApps()
+            }
+        }
     }
 
     private fun refreshPageApps() {
         appsByPage = launcherPages.map { page ->
-            val list = when (page.source) {
+            val sourceApps = when (page.source) {
                 RingMode.FAVORITES -> allApps.filter { repository.isFavorite(it.packageName) }
                 RingMode.MOST_USED -> repository.mostUsedApps(allApps)
                 RingMode.RECENT -> repository.recentApps(allApps)
                 RingMode.ALL_APPS -> allApps.sortedBy { it.label.lowercase() }
             }
-            list.take(page.appLimit)
+            sourceApps.take(page.appLimit)
         }
     }
 
     private fun launchApp(app: LaunchableApp) {
-        val intent = packageManager.getLaunchIntentForPackage(app.packageName)
-        if (intent != null) {
-            startActivity(intent)
-        }
+        packageManager.getLaunchIntentForPackage(app.packageName)?.let(::startActivity)
     }
 
     private fun beginVoiceLaunch() {
@@ -477,10 +450,7 @@ class MainActivity : ComponentActivity() {
             apps = allApps,
             onListening = { voiceState = VoiceUiState.Listening },
             onPartialPhrase = { phrase -> voiceState = VoiceUiState.Heard(phrase) },
-            onResolved = { app, _ ->
-                launchApp(app)
-                voiceState = VoiceUiState.Idle
-            },
+            onResolved = { app, _ -> launchApp(app); voiceState = VoiceUiState.Idle },
             onFailure = { message ->
                 voiceState = VoiceUiState.Failed(message)
                 mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2000)
@@ -491,7 +461,7 @@ class MainActivity : ComponentActivity() {
     private fun startAiVoiceCommand() {
         if (aiApiKey.isBlank()) {
             voiceState = VoiceUiState.Failed("Add an API key in Settings > AI Engine")
-            mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2_500)
+            mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2500)
             return
         }
         voiceState = VoiceUiState.Listening
@@ -501,42 +471,65 @@ class MainActivity : ComponentActivity() {
             onResult = ::processAiVoiceRequest,
             onFailure = { message ->
                 voiceState = VoiceUiState.Failed(message)
-                mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2_000)
+                mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2000)
             }
         )
     }
 
     private fun processAiVoiceRequest(phrase: String) {
         voiceState = VoiceUiState.Heard("Thinking…")
-        val availableApps = allApps.joinToString("\n") { "- ${it.label}" }
+        val availableApps = allApps.joinToString("\n") { "- ${it.label} (${it.packageName})" }
         val instructions = """
-            You are Orbit, a concise Android launcher assistant. The user spoke a request.
-            Installed applications are listed below.
-            If the request is to open, launch, or start one installed app, answer exactly: OPEN_APP: <exact installed app name>.
-            For all other requests, respond with a helpful answer in at most two short sentences. Do not use Markdown.
-
-            Installed apps:
+            You are Orbit, a concise Android launcher assistant.
+            Current time: ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())}
+            
+            User request: "$phrase"
+            
+            TASKS:
+            1. If the user wants to open/launch an app, respond with: OPEN_APP: <package.name>
+            2. If the user wants to search the web, respond with: SEARCH: <query>
+            3. For general questions, give a 1-sentence helpful reply.
+            
+            INSTALLED APPS:
             $availableApps
         """.trimIndent()
+        
         lifecycleScope.launch {
-            val result = AiClient(aiProvider, aiApiKey, aiEndpoint).complete(phrase, instructions)
-            result.onSuccess { answer ->
-                val launchTarget = answer.lineSequence()
-                    .firstOrNull { it.trim().startsWith("OPEN_APP:", ignoreCase = true) }
-                    ?.substringAfter(":")
-                    ?.trim()
-                    ?.let(::findAppByLabel)
-                if (launchTarget != null) {
-                    launchApp(launchTarget)
-                    voiceState = VoiceUiState.Heard("Opening ${launchTarget.label}")
-                    mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 1_000)
-                } else {
-                    voiceState = VoiceUiState.Heard(answer.trim().take(220))
-                    mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 4_000)
+            AiClient(aiProvider, aiApiKey, aiEndpoint).complete(phrase, instructions).onSuccess { answer ->
+                when {
+                    answer.contains("OPEN_APP:", ignoreCase = true) -> {
+                        val pkg = answer.substringAfter("OPEN_APP:").trim().split(" ", "\n")[0]
+                        val app = allApps.find { it.packageName == pkg } ?: findAppByLabel(pkg)
+                        if (app != null) {
+                            launchApp(app)
+                            voiceState = VoiceUiState.Heard("Launching ${app.label}")
+                            mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 1000)
+                        } else {
+                            voiceState = VoiceUiState.Heard("App not found: $pkg")
+                            mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2000)
+                        }
+                    }
+                    answer.contains("SEARCH:", ignoreCase = true) -> {
+                        val query = answer.substringAfter("SEARCH:").trim().take(300)
+                        val searchIntent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                            putExtra(SearchManager.QUERY, query)
+                        }
+                        if (searchIntent.resolveActivity(packageManager) != null) {
+                            startActivity(searchIntent)
+                            voiceState = VoiceUiState.Idle
+                        } else {
+                            voiceState = VoiceUiState.Failed("No web search app is available on this device")
+                            mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 3000)
+                        }
+                    }
+                    else -> {
+                        voiceState = VoiceUiState.Heard(answer.trim().take(200))
+                        mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 5000)
+                    }
                 }
             }.onFailure { error ->
-                voiceState = VoiceUiState.Failed(error.message ?: "The AI request could not be completed")
-                mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 3_000)
+                voiceState = VoiceUiState.Failed("AI Error: ${error.localizedMessage}")
+                mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 3000)
             }
         }
     }
@@ -552,9 +545,7 @@ class MainActivity : ComponentActivity() {
         mainHandler.postDelayed({ voiceState = VoiceUiState.Idle }, 2000)
     }
 
-    private fun openUsageAccessSettings() {
-        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-    }
+    private fun openUsageAccessSettings() { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
 
     private fun requestHomeRole() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

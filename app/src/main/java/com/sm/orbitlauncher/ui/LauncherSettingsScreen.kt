@@ -1,8 +1,11 @@
 package com.sm.orbitlauncher.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.ImageView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,6 +53,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -127,6 +131,7 @@ fun LauncherSettingsScreen(
     onBuiltinWallpaper: (BuiltinWallpaper) -> Unit,
     onPickWallpaperPhoto: () -> Unit,
     onClearWallpaper: () -> Unit,
+    onApplySystemWallpaper: () -> Unit,
     onPickWidget: () -> Unit,
     onRemoveWidget: () -> Unit,
     onPickTileWidget: () -> Unit,
@@ -145,6 +150,12 @@ fun LauncherSettingsScreen(
     onRequestDefaultHome: () -> Unit
 ) {
     var currentCategory by remember { mutableStateOf(SettingsCategory.QUICK) }
+    val context = LocalContext.current
+    fun openExternal(uri: String) {
+        runCatching {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+        }
+    }
     
     BackHandler(onBack = onDismiss)
 
@@ -260,10 +271,10 @@ fun LauncherSettingsScreen(
                     }
 
                     SettingsCategory.TEMPLATES -> {
-                        item { SectionTitle("Community Templates") }
+                        item { SectionTitle("Layout Templates") }
                         item {
                             Text(
-                                "Create, share, and install custom launcher layouts. Templates include page sources, visible app limits, and clock styles.",
+                                "Save the current Orbit layout as a template, then install or remove it whenever you want. Templates save page sources, app limits, and visual preferences on this device.",
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -273,7 +284,7 @@ fun LauncherSettingsScreen(
                             OutlinedButton(
                                 onClick = {
                                     onAddTemplate(LauncherTemplate(
-                                        id = "temp-${System.currentTimeMillis()}",
+                                        id = "template-${System.currentTimeMillis()}",
                                         name = "My Layout ${templates.size + 1}",
                                         pages = pages,
                                         centerMode = centerMode,
@@ -285,21 +296,15 @@ fun LauncherSettingsScreen(
                                     ))
                                 },
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                            ) { Text("Save current as template") }
+                            ) { Text("Save current layout") }
                         }
                         if (templates.isEmpty()) {
-                            item {
-                                Text(
-                                    "No custom templates saved yet.",
-                                    modifier = Modifier.padding(24.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
+                            item { Text("No saved templates yet.", Modifier.padding(24.dp), style = MaterialTheme.typography.bodyMedium) }
                         }
                         items(templates, key = { it.id }) { template ->
                             ListItem(
                                 headlineContent = { Text(template.name) },
-                                supportingContent = { Text("${template.pages.size} pages • ${template.ambientBackdrop.title}") },
+                                supportingContent = { Text("${template.pages.size} pages · ${template.ambientBackdrop.title}") },
                                 trailingContent = {
                                     Row {
                                         TextButton(onClick = { onInstallTemplate(template) }) { Text("Install") }
@@ -314,7 +319,7 @@ fun LauncherSettingsScreen(
                         item { SectionTitle("Home pages") }
                         item {
                             Text(
-                                "Each page has its own app source. Swipe left or right on Home to move between pages. Every source can show all of its matching apps; Orbit automatically reduces icon size as a page becomes denser.",
+                                "Each page has its own app source. Choose exactly how many apps are visible on each page so the orbit remains clear and easy to tap.",
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -324,26 +329,22 @@ fun LauncherSettingsScreen(
                             ListItem(
                                 leadingContent = { Icon(Icons.Outlined.Apps, null) },
                                 headlineContent = { Text(page.name) },
-                                supportingContent = { Text("${page.source.subtitle} • Limit: ${page.appLimit}") },
+                                supportingContent = { Text(page.source.subtitle) },
                                 trailingContent = {
                                     if (pages.size > 1) {
                                         TextButton(onClick = { onRemovePage(page) }) { Text("Remove") }
                                     }
                                 }
                             )
-                            Row(Modifier.padding(horizontal = 24.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                Text("Visible apps: ", style = MaterialTheme.typography.bodySmall)
-                                listOf(8, 12, 16, 20, 24, 32).forEach { limit ->
-                                    FilterChip(
-                                        selected = page.appLimit == limit,
-                                        onClick = { onUpdatePage(page.copy(appLimit = limit)) },
-                                        label = { Text(limit.toString()) },
-                                        modifier = Modifier.padding(end = 4.dp)
-                                    )
-                                }
-                            }
                             ChoiceChips(RingMode.entries.toList(), page.source, { it.title }) { source ->
                                 onUpdatePage(page.copy(name = source.title, source = source))
+                            }
+                            ListItem(
+                                headlineContent = { Text("Apps visible on this page") },
+                                supportingContent = { Text("Currently ${page.appLimit} apps") }
+                            )
+                            ChoiceChips(listOf(8, 12, 16, 20, 24, 32), page.appLimit, { it.toString() }) { limit ->
+                                onUpdatePage(page.copy(appLimit = limit))
                             }
                         }
                         item {
@@ -376,6 +377,19 @@ fun LauncherSettingsScreen(
 
                     SettingsCategory.WALLPAPERS -> {
                         item { SectionTitle("Gallery") }
+                        item {
+                            ListItem(
+                                leadingContent = { Icon(Icons.Outlined.Image, null) },
+                                headlineContent = { Text("Apply as device wallpaper") },
+                                supportingContent = { Text("Use the selected Orbit wallpaper on the Android Home and Recent Apps background") },
+                                trailingContent = {
+                                    OutlinedButton(
+                                        onClick = onApplySystemWallpaper,
+                                        enabled = builtinWallpaper != null || hasWallpaperPhoto
+                                    ) { Text("Apply") }
+                                }
+                            )
+                        }
                         WallpaperCategory.entries.forEach { cat ->
                             item { Text(cat.title, Modifier.padding(horizontal = 24.dp, vertical = 8.dp), style = MaterialTheme.typography.titleSmall) }
                             item {
@@ -442,6 +456,7 @@ fun LauncherSettingsScreen(
                         }
                         item {
                             ListItem(
+                                modifier = Modifier.clickable { openExternal("mailto:simchamaronapp@gmail.app") },
                                 headlineContent = { Text("Email") },
                                 supportingContent = { Text("simchamaronapp@gmail.app") }
                             )
@@ -449,13 +464,21 @@ fun LauncherSettingsScreen(
                         item {
                             ListItem(
                                 headlineContent = { Text("Version") },
-                                supportingContent = { Text("0.7.2") }
+                                supportingContent = { Text("0.7.3") }
                             )
                         }
                         item {
                             ListItem(
-                                headlineContent = { Text("Repository") },
-                                supportingContent = { Text("https://github.com/simchamaron999-jpg/orbit-launcher") }
+                                modifier = Modifier.clickable { openExternal("https://github.com/simchamaron999-jpg/orbit-launcher") },
+                                headlineContent = { Text("GitHub repository") },
+                                supportingContent = { Text("github.com/simchamaron999-jpg/orbit-launcher") }
+                            )
+                        }
+                        item {
+                            ListItem(
+                                modifier = Modifier.clickable { openExternal("https://gitlab.com/fdroid/fdroiddata") },
+                                headlineContent = { Text("F-Droid repository") },
+                                supportingContent = { Text("Open F-Droid source repository") }
                             )
                         }
                     }

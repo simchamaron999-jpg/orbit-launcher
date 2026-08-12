@@ -19,7 +19,7 @@ data class LauncherPage(
     val appLimit: Int = 12
 )
 
-/** A portable collection of launcher settings. */
+/** A saved, installable launcher layout. */
 data class LauncherTemplate(
     val id: String,
     val name: String,

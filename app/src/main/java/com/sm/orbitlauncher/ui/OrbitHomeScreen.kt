@@ -3,70 +3,34 @@ package com.sm.orbitlauncher.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.view.HapticFeedbackConstants
-import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.ImageView
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -78,35 +42,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.sm.orbitlauncher.data.AmbientBackdrop
-import com.sm.orbitlauncher.data.AppTrigger
-import com.sm.orbitlauncher.data.BuiltinWallpaper
-import com.sm.orbitlauncher.data.CenterAction
-import com.sm.orbitlauncher.data.CenterGesture
-import com.sm.orbitlauncher.data.CenterMode
-import com.sm.orbitlauncher.data.CenterSize
-import com.sm.orbitlauncher.data.IconScale
-import com.sm.orbitlauncher.data.LaunchableApp
-import com.sm.orbitlauncher.data.LauncherPage
-import com.sm.orbitlauncher.data.RingMode
-import com.sm.orbitlauncher.data.RotationSpeed
-import com.sm.orbitlauncher.data.VoiceUiState
+import com.sm.orbitlauncher.data.*
 import com.sm.orbitlauncher.widget.OrbitWidgetHost
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.cos
-import kotlin.math.floor
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
-import kotlin.math.sin
+import java.util.*
+import kotlin.math.*
 
 private const val DOUBLE_TAP_WINDOW_MS = 240L
 private const val TRIPLE_TAP_WINDOW_MS = 480L
@@ -150,7 +93,7 @@ fun OrbitHomeScreen(
         detectDarkWallpaper(context, builtinWallpaper, wallpaperUri, ambientBackdrop)
     }
     val controlTint = if (wallpaperIsDark) Color.White else Color(0xFF1A1C1E)
-    val controlContainer = if (wallpaperIsDark) Color.Black.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.64f)
+    val controlContainer = if (wallpaperIsDark) Color.Black.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.68f)
 
     LaunchedEffect(pageCount) {
         page = page.coerceIn(0, pageCount - 1)
@@ -183,40 +126,51 @@ fun OrbitHomeScreen(
             onLaunchApp = onLaunchApp
         )
 
+        // Page Indicator
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(top = 20.dp),
+                .padding(top = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Surface(
                 color = controlContainer,
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(24.dp),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, controlTint.copy(alpha = 0.1f))
             ) {
                 Text(
                     text = activePage.name.uppercase(),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = controlTint
+                    color = controlTint,
+                    letterSpacing = 1.sp
                 )
             }
             if (pageCount > 1) {
-                Text(
-                    text = "${page + 1} / $pageCount",
-                    modifier = Modifier.padding(top = 5.dp),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = controlTint
-                )
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    repeat(pageCount) { i ->
+                        Box(
+                            modifier = Modifier
+                                .size(if (i == page) 8.dp else 6.dp)
+                                .clip(CircleShape)
+                                .background(if (i == page) controlTint else controlTint.copy(alpha = 0.3f))
+                        )
+                    }
+                }
             }
         }
 
+        // Settings Button
         IconButton(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(16.dp)
+                .padding(top = 42.dp, end = 20.dp)
+                .size(48.dp)
                 .clip(CircleShape)
                 .background(controlContainer),
             onClick = onSettings
@@ -224,10 +178,12 @@ fun OrbitHomeScreen(
             Icon(
                 Icons.Outlined.Tune,
                 contentDescription = "Launcher settings",
-                tint = controlTint
+                tint = controlTint,
+                modifier = Modifier.size(24.dp)
             )
         }
 
+        // Central Area
         BoxWithConstraints(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -235,7 +191,7 @@ fun OrbitHomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
             val shortestSide = if (maxWidth < maxHeight) maxWidth else maxHeight
-            val centralDiameter = shortestSide * 0.52f * centerSize.scale
+            val centralDiameter = shortestSide * 0.54f * centerSize.scale
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -255,7 +211,7 @@ fun OrbitHomeScreen(
                     onCenterAction = onCenterAction
                 )
                 if (tileWidgetIds.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(24.dp))
                     WidgetTileStrip(tileWidgetIds, widgetHost)
                 }
             }
@@ -263,15 +219,16 @@ fun OrbitHomeScreen(
 
         if (activeApps.isEmpty()) {
             Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 34.dp),
-                shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.94f),
-                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 64.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = controlContainer,
+                contentColor = controlTint
             ) {
                 Text(
                     text = emptyOrbitMessage(activePage.source),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -321,7 +278,7 @@ private fun FullCircleOrbit(
                         dragDistance += amount.x - amount.y * 0.22f
                     },
                     onDragEnd = {
-                        if (abs(dragDistance) > 38f) onPageChange(page + if (dragDistance < 0f) 1 else -1)
+                        if (abs(dragDistance) > 40f) onPageChange(page + if (dragDistance < 0f) 1 else -1)
                     }
                 )
             }
@@ -330,7 +287,7 @@ private fun FullCircleOrbit(
         val heightPx = constraints.maxHeight.toFloat()
         val shortest = min(widthPx, heightPx)
         val centre = Offset(widthPx / 2f, heightPx / 2f)
-        val radius = shortest * (0.398f + (centerSize.scale - 1f) * 0.075f)
+        val radius = shortest * (0.41f + (centerSize.scale - 1f) * 0.08f)
         val podSize = responsivePodSize(
             preferred = iconScale.podSizeDp.toFloat(),
             appCount = apps.size,
@@ -388,24 +345,33 @@ private fun OrbitAppSlot(
         },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-                        Surface(
-            modifier = Modifier.size(podSize).shadow(if (podSize >= 42.dp) 6.dp else 3.dp, CircleShape, clip = false),
-
+        Surface(
+            modifier = Modifier.size(podSize),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
-            tonalElevation = 3.dp
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.85f),
+            tonalElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
         ) {
-            AppIcon(app.icon, Modifier.padding((podSize.value * 0.16f).dp))
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(podSize * 0.18f)) {
+                if (app.icon != null) {
+                    AndroidView(factory = { context ->
+                        android.widget.ImageView(context).apply {
+                            setImageDrawable(app.icon)
+                            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                        }
+                    }, modifier = Modifier.fillMaxSize())
+                }
+            }
         }
         if (labelsVisible) {
             Text(
                 text = app.label,
-                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.labelMedium.copy(fontSize = max(8f, min(12f, podSize.value * 0.22f)).sp),
-                color = MaterialTheme.colorScheme.onSurface
+                modifier = Modifier.padding(top = 4.dp).width(podSize * 1.2f)
             )
         }
     }
@@ -430,13 +396,15 @@ private fun CentralSurface(
     val scope = rememberCoroutineScope()
     var delayedDoubleAction by remember { mutableStateOf<Job?>(null) }
     var lastDoubleTapAt by remember { mutableLongStateOf(0L) }
+    val view = LocalView.current
+
     fun perform(gesture: CenterGesture) {
         onCenterAction(centerActions[gesture] ?: CenterAction.NONE)
     }
 
     Surface(
         modifier = modifier
-            .shadow(20.dp, CircleShape, clip = false)
+            .shadow(24.dp, CircleShape, clip = false)
             .clip(CircleShape)
             .pointerInput(centerActions) {
                 detectTapGestures(
@@ -462,67 +430,85 @@ private fun CentralSurface(
                 )
             },
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
-        tonalElevation = 6.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
+        tonalElevation = 8.dp
     ) {
         Box(contentAlignment = Alignment.Center) {
-            val time = SimpleDateFormat("H:mm", Locale.getDefault()).format(Date())
-            when (centerMode) {
-                CenterMode.CLOCK, CenterMode.CLOCK_AND_DATE -> {
+            when (voiceState) {
+                is VoiceUiState.Listening -> {
+                    VoiceRipple()
+                    Icon(Icons.Outlined.Mic, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+                }
+                is VoiceUiState.Heard -> {
                     Text(
-                        text = time,
-                        style = MaterialTheme.typography.displayLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 72.sp
-                        ),
-                        color = MaterialTheme.colorScheme.primary
+                        text = voiceState.phrase,
+                        modifier = Modifier.padding(32.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                CenterMode.APP_WIDGET -> {
-                    if (widgetId >= 0) {
-                        val view = remember(widgetId) { widgetHost.viewFor(widgetId) }
-                        if (view != null) {
-                            AndroidView(
-                                modifier = Modifier.fillMaxSize(),
-                                factory = { view }
+                is VoiceUiState.Failed -> {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
+                        Icon(Icons.Outlined.ErrorOutline, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = voiceState.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                else -> {
+                    val time = SimpleDateFormat("H:mm", Locale.getDefault()).format(Date())
+                    when (centerMode) {
+                        CenterMode.CLOCK, CenterMode.CLOCK_AND_DATE -> {
+                            Text(
+                                text = time,
+                                style = MaterialTheme.typography.displayLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 78.sp,
+                                    letterSpacing = (-2).sp
+                                ),
+                                color = MaterialTheme.colorScheme.primary
                             )
+                        }
+                        CenterMode.APP_WIDGET -> {
+                            if (widgetId >= 0) {
+                                val widgetView = remember(widgetId) { widgetHost.viewFor(widgetId) }
+                                if (widgetView != null) {
+                                    AndroidView(
+                                        modifier = Modifier.fillMaxSize(),
+                                        factory = { widgetView }
+                                    )
+                                }
+                            } else {
+                                Text("Long press to add widget", style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+                            }
                         }
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Refined Quick Action Row (Floating Glass Style)
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 16.dp),
+                shape = CircleShape,
+                color = controlContainer.copy(alpha = 0.45f),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, controlTint.copy(alpha = 0.15f))
             ) {
-                OrbitControlButton(
-                    onClick = onVoice,
-                    contentDescription = "Voice launch",
-                    tint = controlTint,
-                    container = controlContainer
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(Icons.Outlined.Mic, contentDescription = null, tint = controlTint)
+                    OrbitControlButton(Icons.Outlined.Mic, "Voice launch", onVoice, controlTint)
+                    OrbitControlButton(Icons.Outlined.AutoAwesome, "AI Assistant", onAiAssistant, controlTint)
+                    OrbitControlButton(Icons.Outlined.Search, "App search", onSearch, controlTint)
                 }
-                OrbitControlButton(
-                    onClick = onAiAssistant,
-                    contentDescription = "Ask Orbit by voice",
-                    tint = controlTint,
-                    container = controlContainer
-                ) {
-                    Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = controlTint)
-                }
-                OrbitControlButton(
-                    onClick = onSearch,
-                    contentDescription = "App search",
-                    tint = controlTint,
-                    container = controlContainer
-                ) {
-                    Icon(Icons.Outlined.Search, contentDescription = null, tint = controlTint)
-                }
-            }
-
-            if (voiceState != VoiceUiState.Idle) {
-                VoiceOverlay(voiceState)
             }
         }
     }
@@ -530,113 +516,103 @@ private fun CentralSurface(
 
 @Composable
 private fun OrbitControlButton(
-    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
     contentDescription: String,
-    tint: Color,
-    container: Color,
-    content: @Composable () -> Unit
+    onClick: () -> Unit,
+    tint: Color
 ) {
-    Surface(
+    IconButton(
         onClick = onClick,
-        modifier = Modifier.size(40.dp),
-        shape = CircleShape,
-        color = container,
-        contentColor = tint,
-        tonalElevation = 0.dp
+        modifier = Modifier.size(44.dp)
     ) {
-        Box(contentAlignment = Alignment.Center) { content() }
+        Icon(icon, contentDescription, modifier = Modifier.size(22.dp), tint = tint.copy(alpha = 0.9f))
     }
 }
 
 @Composable
-private fun VoiceOverlay(state: VoiceUiState) {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            val (icon, text) = when (state) {
-                is VoiceUiState.Listening -> Icons.Outlined.Mic to "Listening..."
-                is VoiceUiState.Heard -> Icons.Outlined.Mic to state.phrase
-                is VoiceUiState.Failed -> Icons.Outlined.Mic to state.message
-                is VoiceUiState.RequestingPermission -> Icons.Outlined.Mic to "Requesting microphone..."
-                is VoiceUiState.Idle -> Icons.Outlined.Mic to ""
+private fun VoiceRipple() {
+    val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition(label = "voice ripple")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.6f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "ripple scale"
+    )
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0f,
+        animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+            animation = tween(1200),
+            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+        ),
+        label = "ripple alpha"
+    )
+    Box(
+        modifier = Modifier
+            .size(80.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
             }
-            Icon(icon, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.height(12.dp))
-            Text(text, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-        }
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), CircleShape)
+    )
+}
+
+@Composable
+private fun BuiltinWallpaperLayer(wallpaper: BuiltinWallpaper) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Image(
+            painter = androidx.compose.ui.res.painterResource(id = wallpaper.resourceId),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
+    }
+}
+
+@Composable
+private fun UserWallpaperLayer(uri: String) {
+    val context = LocalContext.current
+    val image = remember(uri) {
+        decodeBitmapSampled(context, Uri.parse(uri), 1440, 2560)?.asImageBitmap()
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (image != null) androidx.compose.foundation.Image(
+            bitmap = image,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+        )
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
     }
 }
 
 @Composable
 private fun WidgetTileStrip(ids: List<Int>, host: OrbitWidgetHost) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         ids.forEach { id ->
             Surface(
-                modifier = Modifier.size(80.dp).padding(4.dp),
+                modifier = Modifier.size(72.dp).padding(4.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer,
-                tonalElevation = 2.dp
+                color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.85f),
+                tonalElevation = 4.dp
             ) {
                 val view = remember(id) { host.viewFor(id) }
                 if (view != null) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxSize(),
-                        factory = { view }
-                    )
+                    AndroidView(factory = { view }, modifier = Modifier.fillMaxSize())
                 }
             }
         }
     }
-}
-
-@Composable
-private fun BuiltinWallpaperLayer(wallpaper: BuiltinWallpaper) {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            ImageView(context).apply {
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                setImageResource(wallpaper.resourceId)
-            }
-        },
-        update = { view -> view.setImageResource(wallpaper.resourceId) }
-    )
-}
-
-@Composable
-private fun UserWallpaperLayer(uri: String) {
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            ImageView(context).apply {
-                scaleType = ImageView.ScaleType.CENTER_CROP
-                setImageURI(android.net.Uri.parse(uri))
-            }
-        },
-        update = { view -> view.setImageURI(android.net.Uri.parse(uri)) }
-    )
-}
-
-@Composable
-private fun AppIcon(drawable: Drawable?, modifier: Modifier) {
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            ImageView(context).apply {
-                setImageDrawable(drawable)
-            }
-        },
-        update = { view -> view.setImageDrawable(drawable) }
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -646,32 +622,45 @@ private fun AppSearchSheet(
     onDismiss: () -> Unit,
     onLaunch: (LaunchableApp) -> Unit
 ) {
-    var query by mutableStateOf("")
+    var query by remember { mutableStateOf("") }
     val filtered = remember(query, apps) {
-        apps.filter { it.label.contains(query, ignoreCase = true) }.sortedBy { it.label }
+        if (query.isBlank()) emptyList()
+        else apps.filter { it.label.contains(query, ignoreCase = true) }
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.fillMaxWidth().height(480.dp)) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 8.dp
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f).padding(16.dp)) {
             TextField(
                 value = query,
                 onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search apps...") },
                 leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                shape = RoundedCornerShape(28.dp),
+                shape = CircleShape,
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 )
             )
-            LazyColumn(Modifier.fillMaxWidth().weight(1f)) {
-                items(filtered, key = { it.stableId }) { app ->
+            Spacer(Modifier.height(16.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                items(filtered) { app ->
                     ListItem(
-                        modifier = Modifier.clickable { onLaunch(app) },
                         headlineContent = { Text(app.label) },
-                        supportingContent = { Text(app.packageName) },
-                        leadingContent = { Box(Modifier.size(40.dp)) { AppIcon(app.icon, Modifier.fillMaxSize()) } }
+                        leadingContent = {
+                            if (app.icon != null) {
+                                AndroidView(factory = { context ->
+                                    android.widget.ImageView(context).apply {
+                                        setImageDrawable(app.icon)
+                                    }
+                                }, modifier = Modifier.size(40.dp))
+                            }
+                        },
+                        modifier = Modifier.clickable { onLaunch(app) }
                     )
                 }
             }
@@ -701,13 +690,32 @@ private fun detectDarkWallpaper(
     val bitmap = runCatching {
         when {
             builtinWallpaper != null -> BitmapFactory.decodeResource(context.resources, builtinWallpaper.resourceId)
-            wallpaperUri != null -> context.contentResolver.openInputStream(Uri.parse(wallpaperUri))
-                ?.use { BitmapFactory.decodeStream(it) }
+            wallpaperUri != null -> decodeBitmapSampled(context, Uri.parse(wallpaperUri), 256, 256)
             else -> null
         }
     }.getOrNull()
     if (bitmap == null) return ambientBackdrop != AmbientBackdrop.CLAY
     return bitmap.isDarkByAverageLuminance()
+}
+
+private fun decodeBitmapSampled(context: Context, uri: Uri, targetWidth: Int, targetHeight: Int): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, bounds)
+    } ?: return null
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+    var sampleSize = 1
+    while (bounds.outWidth / sampleSize > targetWidth || bounds.outHeight / sampleSize > targetHeight) {
+        sampleSize *= 2
+    }
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize
+        inPreferredConfig = Bitmap.Config.ARGB_8888
+    }
+    return context.contentResolver.openInputStream(uri)?.use { stream ->
+        BitmapFactory.decodeStream(stream, null, options)
+    }
 }
 
 private fun Bitmap.isDarkByAverageLuminance(): Boolean {
@@ -742,3 +750,4 @@ private fun emptyOrbitMessage(mode: RingMode): String = when (mode) {
     RingMode.RECENT -> "Recently opened apps will appear here."
     RingMode.ALL_APPS -> "No apps found on this device."
 }
+

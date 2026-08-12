@@ -19,15 +19,16 @@ class AiClient(
 ) {
     suspend fun complete(prompt: String, systemPrompt: String? = null): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val endpoint = customEndpoint ?: provider.endpoint
-                ?: return@withContext Result.failure(Exception("Endpoint not configured"))
-            val url = URL(
-                if (provider == AiProvider.GOOGLE) {
-                    "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
-                } else {
-                    "$endpoint/chat/completions"
+            val url = if (provider == AiProvider.GOOGLE) {
+                URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey")
+            } else {
+                val endpoint = customEndpoint ?: provider.endpoint
+                    ?: return@withContext Result.failure(Exception("Endpoint not configured"))
+                if (!endpoint.startsWith("https://", ignoreCase = true)) {
+                    return@withContext Result.failure(Exception("AI endpoints must use HTTPS"))
                 }
-            )
+                URL("${endpoint.trimEnd('/')}/chat/completions")
+            }
 
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
@@ -56,7 +57,13 @@ class AiClient(
                 Result.failure(Exception("HTTP ${connection.responseCode}: $detail"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            val message = when (e) {
+                is java.net.UnknownHostException -> "No internet connection. Check Wi‑Fi or mobile data."
+                is java.net.SocketTimeoutException -> "The AI provider took too long to respond. Try again."
+                is javax.net.ssl.SSLException -> "Secure connection to the AI provider could not be established."
+                else -> e.message ?: "The AI request could not be completed."
+            }
+            Result.failure(Exception(message, e))
         }
     }
 
