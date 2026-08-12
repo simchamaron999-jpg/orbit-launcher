@@ -42,7 +42,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -150,6 +152,8 @@ fun LauncherSettingsScreen(
     onRequestDefaultHome: () -> Unit
 ) {
     var currentCategory by remember { mutableStateOf(SettingsCategory.QUICK) }
+    var aiApiKeyDraft by remember(aiApiKey) { mutableStateOf(aiApiKey) }
+    var aiKeySaveFeedback by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val isDefaultHome = remember(context) {
         val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
@@ -260,9 +264,13 @@ fun LauncherSettingsScreen(
                             val context = LocalContext.current
                             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                                 OutlinedTextField(
-                                    value = aiApiKey,
-                                    onValueChange = onAiApiKey,
+                                    value = aiApiKeyDraft,
+                                    onValueChange = {
+                                        aiApiKeyDraft = it
+                                        aiKeySaveFeedback = null
+                                    },
                                     label = { Text("OpenRouter API Key") },
+                                    supportingText = { Text("Stored only after you tap Save API Key.") },
                                     modifier = Modifier.fillMaxWidth(),
                                     visualTransformation = PasswordVisualTransformation()
                                 )
@@ -273,11 +281,24 @@ fun LauncherSettingsScreen(
                                 ) {
                                     Button(
                                         onClick = {
-                                            android.widget.Toast.makeText(context, "OpenRouter API Key saved successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                                            onAiApiKey(aiApiKeyDraft.trim())
+                                            aiKeySaveFeedback = if (aiApiKeyDraft.isBlank()) {
+                                                "Saved without an API key. Orbit AI remains unavailable until a key is entered."
+                                            } else {
+                                                "OpenRouter API key saved on this device."
+                                            }
                                         }
                                     ) {
                                         Text("Save API Key")
                                     }
+                                }
+                                aiKeySaveFeedback?.let { feedback ->
+                                    Text(
+                                        text = feedback,
+                                        modifier = Modifier.padding(top = 8.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
@@ -527,15 +548,20 @@ fun LauncherSettingsScreen(
 
 @Composable
 private fun CategoryBar(selected: SettingsCategory, onSelect: (SettingsCategory) -> Unit) {
-    LazyRow(
-        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    val categories = SettingsCategory.entries.toList()
+    ScrollableTabRow(
+        selectedTabIndex = categories.indexOf(selected).coerceAtLeast(0),
+        edgePadding = 16.dp,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.primary
     ) {
-        item { Spacer(Modifier.size(16.dp, 1.dp)) }
-        items(SettingsCategory.entries.toList()) { cat ->
-            FilterChip(selected == cat, { onSelect(cat) }, label = { Text(cat.title) })
+        categories.forEach { category ->
+            Tab(
+                selected = selected == category,
+                onClick = { onSelect(category) },
+                text = { Text(category.title, maxLines = 1) }
+            )
         }
-        item { Spacer(Modifier.size(16.dp, 1.dp)) }
     }
 }
 
@@ -550,7 +576,7 @@ private fun SectionTitle(value: String) {
         text = value,
         modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
         style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 

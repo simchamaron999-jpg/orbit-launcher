@@ -36,6 +36,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +58,17 @@ import kotlin.math.*
 
 private const val DOUBLE_TAP_WINDOW_MS = 240L
 private const val TRIPLE_TAP_WINDOW_MS = 480L
+private const val DENSE_ORBIT_APP_THRESHOLD = 16
+
+/** Semantic, wallpaper-aware surface roles for Orbit's custom home controls. */
+private data class OrbitSurfaceStyle(
+    val controlContent: Color,
+    val controlContainer: Color,
+    val podContainer: Color,
+    val podContent: Color,
+    val labelContainer: Color,
+    val labelContent: Color
+)
 
 @Composable
 fun OrbitHomeScreen(
@@ -94,8 +108,28 @@ fun OrbitHomeScreen(
     val wallpaperIsDark = remember(builtinWallpaper, wallpaperUri, ambientBackdrop) {
         detectDarkWallpaper(context, builtinWallpaper, wallpaperUri, ambientBackdrop)
     }
-    val controlTint = if (wallpaperIsDark) Color.White else Color(0xFF1A1C1E)
-    val controlContainer = if (wallpaperIsDark) Color.Black.copy(alpha = 0.56f) else Color.White.copy(alpha = 0.78f)
+    val colors = MaterialTheme.colorScheme
+    val orbitStyle = if (wallpaperIsDark) {
+        OrbitSurfaceStyle(
+            controlContent = colors.onSurface,
+            controlContainer = colors.surfaceContainerHigh.copy(alpha = 0.90f),
+            podContainer = colors.surfaceContainerHighest.copy(alpha = 0.94f),
+            podContent = colors.onSurface,
+            labelContainer = colors.surfaceContainer.copy(alpha = 0.94f),
+            labelContent = colors.onSurface
+        )
+    } else {
+        OrbitSurfaceStyle(
+            controlContent = colors.onSurface,
+            controlContainer = colors.surfaceContainer.copy(alpha = 0.90f),
+            podContainer = colors.surfaceContainerHigh.copy(alpha = 0.94f),
+            podContent = colors.onSurface,
+            labelContainer = colors.surfaceContainerLowest.copy(alpha = 0.94f),
+            labelContent = colors.onSurface
+        )
+    }
+    val controlTint = orbitStyle.controlContent
+    val controlContainer = orbitStyle.controlContainer
 
     LaunchedEffect(pageCount) {
         page = page.coerceIn(0, pageCount - 1)
@@ -124,6 +158,7 @@ fun OrbitHomeScreen(
             appTrigger = appTrigger,
             hapticsEnabled = hapticsEnabled,
             rotationSpeed = rotationSpeed,
+            orbitStyle = orbitStyle,
             onPageChange = { page = it.coerceIn(0, pageCount - 1) },
             onLaunchApp = onLaunchApp
         )
@@ -276,10 +311,12 @@ private fun FullCircleOrbit(
     appTrigger: AppTrigger,
     hapticsEnabled: Boolean,
     rotationSpeed: RotationSpeed,
+    orbitStyle: OrbitSurfaceStyle,
     onPageChange: (Int) -> Unit,
     onLaunchApp: (LaunchableApp) -> Unit
 ) {
     var dragDistance by remember { mutableFloatStateOf(0f) }
+    var focusedAppId by remember(page) { mutableStateOf<String?>(null) }
     val rotationDegrees by animateFloatAsState(
         targetValue = page * -360f,
         animationSpec = tween(rotationSpeed.durationMs),
@@ -308,15 +345,16 @@ private fun FullCircleOrbit(
         val centre = Offset(widthPx / 2f, heightPx / 2f)
         val radius = shortest * (0.41f + (centerSize.scale - 1f) * 0.08f)
         val appCount = maxOf(1, apps.size)
+        val denseOrbit = appCount > DENSE_ORBIT_APP_THRESHOLD
         val podSize = responsivePodSize(
             preferred = iconScale.podSizeDp.toFloat(),
             appCount = appCount,
             orbitRadiusPx = radius,
             labelsVisible = labelsVisible
         ).dp
-        // When app count is very high (dense orbit), scale down label text and height dynamically to prevent overlap
-        val dynamicLabelFont = if (appCount > 20) 8.sp else 10.sp
-        val labelHeight = if (labelsVisible) (if (appCount > 20) 14.dp else 18.dp) else 0.dp
+        // Dense rings reveal one readable label on hold rather than shrinking every label into overlap.
+        val dynamicLabelFont = if (denseOrbit) 11.sp else 10.sp
+        val labelHeight = if (labelsVisible) (if (denseOrbit) 20.dp else 18.dp) else 0.dp
         val slotHeight = podSize + labelHeight
         apps.forEachIndexed { index, app ->
             val degrees = -90f + index * (360f / maxOf(1, apps.size)) + rotationDegrees
@@ -327,9 +365,10 @@ private fun FullCircleOrbit(
                 app = app,
                 appTrigger = appTrigger,
                 hapticsEnabled = hapticsEnabled,
-                labelsVisible = labelsVisible,
+                showLabel = labelsVisible && (!denseOrbit || focusedAppId == app.stableId),
                 podSize = podSize,
                 labelFontSize = dynamicLabelFont,
+                orbitStyle = orbitStyle,
                 modifier = Modifier
                     .offset {
                         IntOffset(
@@ -338,6 +377,7 @@ private fun FullCircleOrbit(
                         )
                     }
                     .size(width = podSize, height = slotHeight),
+                onFocus = { focusedAppId = app.stableId },
                 onLaunch = { onLaunchApp(app) }
             )
         }
@@ -349,10 +389,12 @@ private fun OrbitAppSlot(
     app: LaunchableApp,
     appTrigger: AppTrigger,
     hapticsEnabled: Boolean,
-    labelsVisible: Boolean,
+    showLabel: Boolean,
     podSize: Dp,
     labelFontSize: androidx.compose.ui.unit.TextUnit,
+    orbitStyle: OrbitSurfaceStyle,
     modifier: Modifier,
+    onFocus: () -> Unit,
     onLaunch: () -> Unit
 ) {
     val view = LocalView.current
@@ -361,21 +403,27 @@ private fun OrbitAppSlot(
         onLaunch()
     }
     Column(
-        modifier = modifier.pointerInput(appTrigger) {
-            detectTapGestures(
-                onTap = if (appTrigger == AppTrigger.TAP) ({ launch() }) else null,
-                onDoubleTap = if (appTrigger == AppTrigger.DOUBLE_TAP) ({ launch() }) else null
-            )
-        },
+        modifier = modifier
+            .semantics(mergeDescendants = true) {
+                role = androidx.compose.ui.semantics.Role.Button
+                contentDescription = "Open ${app.label}"
+            }
+            .pointerInput(appTrigger) {
+                detectTapGestures(
+                    onTap = if (appTrigger == AppTrigger.TAP) ({ launch() }) else null,
+                    onDoubleTap = if (appTrigger == AppTrigger.DOUBLE_TAP) ({ launch() }) else null,
+                    onLongPress = { onFocus() }
+                )
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
             modifier = Modifier.size(podSize),
             shape = CircleShape,
-            color = Color.White.copy(alpha = 0.84f),
-            shadowElevation = 6.dp,
+            color = orbitStyle.podContainer,
+            shadowElevation = 3.dp,
             tonalElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.52f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, orbitStyle.podContent.copy(alpha = 0.12f))
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(podSize * 0.22f)) {
                 if (app.icon != null) {
@@ -388,19 +436,19 @@ private fun OrbitAppSlot(
                 }
             }
         }
-        if (labelsVisible) {
+        if (showLabel) {
             Surface(
                 modifier = Modifier
                     .padding(top = 5.dp)
                     .widthIn(max = podSize * 1.25f),
                 shape = RoundedCornerShape(8.dp),
-                color = Color.White.copy(alpha = 0.74f),
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.46f))
+                color = orbitStyle.labelContainer,
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, orbitStyle.labelContent.copy(alpha = 0.12f))
             ) {
                 Text(
                     text = app.label,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = labelFontSize, fontWeight = FontWeight.SemiBold),
-                    color = Color.Black,
+                    color = orbitStyle.labelContent,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
@@ -505,7 +553,7 @@ private fun CentralSurface(
                                 text = time,
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 72.sp,
+                                    fontSize = 68.sp,
                                     letterSpacing = (-2).sp
                                 ),
                                 color = MaterialTheme.colorScheme.primary
@@ -533,28 +581,28 @@ private fun CentralSurface(
                 icon = Icons.Outlined.AutoAwesome,
                 contentDescription = "Ask Orbit with AI",
                 onClick = onAiAssistant,
-                tint = Color(0xFF111111),
+                tint = controlTint,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 14.dp)
-                    .shadow(4.dp, CircleShape)
-                    .background(Color.White.copy(alpha = 0.92f), CircleShape)
+                    .shadow(2.dp, CircleShape)
+                    .background(controlContainer, CircleShape)
             )
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 14.dp),
                 shape = CircleShape,
-                color = Color.White.copy(alpha = 0.92f),
-                shadowElevation = 4.dp,
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.12f))
+                color = controlContainer,
+                shadowElevation = 2.dp,
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, controlTint.copy(alpha = 0.12f))
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OrbitControlButton(Icons.Outlined.Mic, "Voice launch", onVoice, Color(0xFF111111))
-                    OrbitControlButton(Icons.Outlined.Search, "App search", onSearch, Color(0xFF111111))
+                    OrbitControlButton(Icons.Outlined.Mic, "Voice launch", onVoice, controlTint)
+                    OrbitControlButton(Icons.Outlined.Search, "App search", onSearch, controlTint)
                 }
             }
         }
