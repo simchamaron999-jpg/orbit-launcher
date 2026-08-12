@@ -1,4 +1,4 @@
-# Orbit Launcher 0.7
+# Orbit Launcher 0.7.2
 
 **Orbit Launcher** is a native Android-only home launcher, built with Kotlin, Jetpack Compose, and Material You 3. It places app sources around a central clock or widget surface, combining a distinctive radial interface with practical launcher controls, wallpaper customization, widgets, gesture actions, and optional bring-your-own-key AI assistance.
 
@@ -7,11 +7,12 @@
 | Feature | Description |
 |---|---|
 | **Independent home pages** | Create up to eight swipeable pages and give each one its own source: **Recent**, **Most used**, **Favourites**, or **All apps**. |
-| **Unlimited app sources** | Pages no longer use a fixed app limit. Every matching app is shown, while Orbit automatically reduces icon and label size as the page becomes denser. |
+| **Configurable app density** | Each page has a selectable visible app limit (8, 12, 16, 20, 24, or 32). Orbit automatically scales icon sizes to maintain a clean, readable radial layout regardless of density. |
 | **Wallpaper-adaptive controls** | Orbit samples the active wallpaper luminance. The page indicator and settings control become light on dark wallpapers and dark on light wallpapers. |
 | **Refined centre controls** | The voice, Ask Orbit, and search controls now use a visually consistent circular icon treatment. |
 | **AI voice requests** | Tapping **Ask Orbit** opens the microphone, transcribes the request, and sends it to the selected BYOK provider. For an app-launch request, the AI can select and open an installed app; otherwise, its concise reply is shown in the centre surface. |
 | **Supported BYOK providers** | OpenAI, Anthropic, Google Gemini, OpenRouter, and a custom OpenAI-compatible endpoint. **OmniRoute is not offered.** |
+| **Community Templates** | Save, share, and install custom launcher layouts. Templates include page sources, visible app limits, clock styles, and visual themes. |
 | **Material You customization** | Choose the central clock or widget, clock style, circle size, app-label visibility, app trigger, gesture actions, wallpapers, visual theme, and more. |
 | **Android launcher features** | Voice app launching, AppWidget hosting, full-screen category settings, usage-access support, portrait lock, haptics, and first-run onboarding. |
 

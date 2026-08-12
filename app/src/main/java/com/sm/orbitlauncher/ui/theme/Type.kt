@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.ui.theme
+package com.sm.orbitlauncher.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

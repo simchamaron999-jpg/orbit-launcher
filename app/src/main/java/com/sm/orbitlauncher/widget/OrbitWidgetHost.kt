@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.widget
+package com.sm.orbitlauncher.widget
 
 import android.app.Activity
 import android.appwidget.AppWidgetHost
@@ -7,7 +7,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import com.manus.orbitlauncher.data.LauncherRepository
+import com.sm.orbitlauncher.data.LauncherRepository
 
 /** Hosts the user-selected Android widget inside Orbit's central surface. */
 class OrbitWidgetHost(

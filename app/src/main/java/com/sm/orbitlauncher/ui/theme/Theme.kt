@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.ui.theme
+package com.sm.orbitlauncher.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -11,7 +11,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.manus.orbitlauncher.data.AppearanceMode
+import com.sm.orbitlauncher.data.AppearanceMode
 
 private val OrbitDarkScheme = darkColorScheme(
     primary = Color(0xFFEADDFF),

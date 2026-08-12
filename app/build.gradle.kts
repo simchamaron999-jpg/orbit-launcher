@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.manus.orbitlauncher"
+    namespace = "com.sm.orbitlauncher"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.manus.orbitlauncher"
+        applicationId = "com.sm.orbitlauncher"
         minSdk = 26
         targetSdk = 35
         versionCode = 9

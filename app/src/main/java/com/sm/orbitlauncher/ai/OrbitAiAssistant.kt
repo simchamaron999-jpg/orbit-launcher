@@ -1,6 +1,6 @@
-package com.manus.orbitlauncher.ai
+package com.sm.orbitlauncher.ai
 
-import com.manus.orbitlauncher.data.LaunchableApp
+import com.sm.orbitlauncher.data.LaunchableApp
 import org.json.JSONObject
 
 /**

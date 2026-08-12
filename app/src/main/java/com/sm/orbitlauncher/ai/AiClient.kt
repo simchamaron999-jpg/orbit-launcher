@@ -1,6 +1,6 @@
-package com.manus.orbitlauncher.ai
+package com.sm.orbitlauncher.ai
 
-import com.manus.orbitlauncher.data.AiProvider
+import com.sm.orbitlauncher.data.AiProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray

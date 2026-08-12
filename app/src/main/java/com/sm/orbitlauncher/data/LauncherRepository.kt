@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.data
+package com.sm.orbitlauncher.data
 
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
@@ -71,7 +71,8 @@ class LauncherRepository(private val context: Context) {
                     val source = runCatching { RingMode.valueOf(item.getString("source")) }.getOrNull() ?: continue
                     val id = item.optString("id").takeIf { it.isNotBlank() } ?: "page-$index"
                     val name = item.optString("name").takeIf { it.isNotBlank() } ?: source.title
-                    add(LauncherPage(id = id, name = name, source = source))
+                    val limit = item.optInt("appLimit", 12)
+                    add(LauncherPage(id = id, name = name, source = source, appLimit = limit))
                 }
             }.ifEmpty { defaultPages() }
         }.getOrElse { defaultPages() }
@@ -85,10 +86,74 @@ class LauncherRepository(private val context: Context) {
                     put("id", page.id)
                     put("name", page.name)
                     put("source", page.source.name)
+                    put("appLimit", page.appLimit)
                 })
             }
         }
         prefs.edit().putString(KEY_PAGES, encoded.toString()).apply()
+    }
+
+    fun templates(): List<LauncherTemplate> {
+        val raw = prefs.getString(KEY_TEMPLATES, null) ?: return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    val pagesArray = obj.getJSONArray("pages")
+                    val pages = buildList {
+                        for (j in 0 until pagesArray.length()) {
+                            val p = pagesArray.getJSONObject(j)
+                            add(LauncherPage(
+                                id = p.getString("id"),
+                                name = p.getString("name"),
+                                source = RingMode.valueOf(p.getString("source")),
+                                appLimit = p.optInt("appLimit", 12)
+                            ))
+                        }
+                    }
+                    add(LauncherTemplate(
+                        id = obj.getString("id"),
+                        name = obj.getString("name"),
+                        pages = pages,
+                        centerMode = CenterMode.valueOf(obj.getString("centerMode")),
+                        centerSize = CenterSize.valueOf(obj.getString("centerSize")),
+                        iconScale = IconScale.valueOf(obj.getString("iconScale")),
+                        labelsVisible = obj.getBoolean("labelsVisible"),
+                        ambientBackdrop = AmbientBackdrop.valueOf(obj.getString("ambientBackdrop")),
+                        clockStyle = ClockStyle.valueOf(obj.getString("clockStyle"))
+                    ))
+                }
+            }
+        }.getOrElse { emptyList() }
+    }
+
+    fun setTemplates(templates: List<LauncherTemplate>) {
+        val encoded = JSONArray().apply {
+            templates.forEach { t ->
+                put(JSONObject().apply {
+                    put("id", t.id)
+                    put("name", t.name)
+                    put("pages", JSONArray().apply {
+                        t.pages.forEach { p ->
+                            put(JSONObject().apply {
+                                put("id", p.id)
+                                put("name", p.name)
+                                put("source", p.source.name)
+                                put("appLimit", p.appLimit)
+                            })
+                        }
+                    })
+                    put("centerMode", t.centerMode.name)
+                    put("centerSize", t.centerSize.name)
+                    put("iconScale", t.iconScale.name)
+                    put("labelsVisible", t.labelsVisible)
+                    put("ambientBackdrop", t.ambientBackdrop.name)
+                    put("clockStyle", t.clockStyle.name)
+                })
+            }
+        }
+        prefs.edit().putString(KEY_TEMPLATES, encoded.toString()).apply()
     }
 
     private fun defaultPages(): List<LauncherPage> = listOf(
@@ -230,6 +295,7 @@ class LauncherRepository(private val context: Context) {
         private const val KEY_FAVORITES = "favorite_ids"
         private const val KEY_RING_MODE = "ring_mode"
         private const val KEY_PAGES = "launcher_pages"
+        private const val KEY_TEMPLATES = "launcher_templates"
         private const val MAX_PAGE_COUNT = 8
         private const val KEY_CENTER_MODE = "center_mode"
         private const val KEY_CENTER_SIZE = "center_size"

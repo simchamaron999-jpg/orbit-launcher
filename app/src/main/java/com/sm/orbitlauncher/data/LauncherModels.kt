@@ -1,7 +1,7 @@
-package com.manus.orbitlauncher.data
+package com.sm.orbitlauncher.data
 
 import android.graphics.drawable.Drawable
-import com.manus.orbitlauncher.R
+import com.sm.orbitlauncher.R
 
 /** The content source displayed around the central surface. */
 enum class RingMode(val title: String, val subtitle: String) {
@@ -15,7 +15,21 @@ enum class RingMode(val title: String, val subtitle: String) {
 data class LauncherPage(
     val id: String,
     val name: String,
-    val source: RingMode
+    val source: RingMode,
+    val appLimit: Int = 12
+)
+
+/** A portable collection of launcher settings. */
+data class LauncherTemplate(
+    val id: String,
+    val name: String,
+    val pages: List<LauncherPage>,
+    val centerMode: CenterMode,
+    val centerSize: CenterSize,
+    val iconScale: IconScale,
+    val labelsVisible: Boolean,
+    val ambientBackdrop: AmbientBackdrop,
+    val clockStyle: ClockStyle
 )
 
 /** The content displayed within Orbit's large central circle. */

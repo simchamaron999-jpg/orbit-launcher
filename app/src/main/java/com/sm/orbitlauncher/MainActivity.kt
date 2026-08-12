@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher
+package com.sm.orbitlauncher
 
 import android.Manifest
 import android.app.role.RoleManager
@@ -19,13 +19,13 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import com.manus.orbitlauncher.ai.AiClient
-import com.manus.orbitlauncher.data.*
-import com.manus.orbitlauncher.ui.LauncherSettingsScreen
-import com.manus.orbitlauncher.ui.OrbitHomeScreen
-import com.manus.orbitlauncher.ui.theme.OrbitTheme
-import com.manus.orbitlauncher.voice.VoiceAppLauncher
-import com.manus.orbitlauncher.widget.OrbitWidgetHost
+import com.sm.orbitlauncher.ai.AiClient
+import com.sm.orbitlauncher.data.*
+import com.sm.orbitlauncher.ui.LauncherSettingsScreen
+import com.sm.orbitlauncher.ui.OrbitHomeScreen
+import com.sm.orbitlauncher.ui.theme.OrbitTheme
+import com.sm.orbitlauncher.voice.VoiceAppLauncher
+import com.sm.orbitlauncher.widget.OrbitWidgetHost
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
 
     private var allApps by mutableStateOf<List<LaunchableApp>>(emptyList())
     private var launcherPages by mutableStateOf<List<LauncherPage>>(emptyList())
+    private var launcherTemplates by mutableStateOf<List<LauncherTemplate>>(emptyList())
     private var appsByPage by mutableStateOf<List<List<LaunchableApp>>>(emptyList())
     private var centerMode by mutableStateOf(CenterMode.CLOCK)
     private var centerSize by mutableStateOf(CenterSize.BALANCED)
@@ -243,6 +244,10 @@ class MainActivity : ComponentActivity() {
                             clockStyle = style
                             repository.setClockStyle(style)
                         },
+                        templates = launcherTemplates,
+                        onAddTemplate = ::addTemplate,
+                        onInstallTemplate = ::installTemplate,
+                        onRemoveTemplate = ::removeTemplate,
                         onRequestUsageAccess = ::openUsageAccessSettings,
                         onRequestDefaultHome = ::requestHomeRole
                     )
@@ -272,6 +277,8 @@ class MainActivity : ComponentActivity() {
 
     private fun loadPreferences() {
         launcherPages = repository.pages()
+        launcherTemplates = repository.templates()
+        centerMode = repository.selectedCenterMode()
         centerMode = repository.selectedCenterMode()
         centerSize = repository.selectedCenterSize()
         centerActions = CenterGesture.entries.associateWith(repository::centerAction)
@@ -316,6 +323,36 @@ class MainActivity : ComponentActivity() {
         launcherPages = launcherPages.filterNot { it.id == page.id }
         repository.setPages(launcherPages)
         refreshPageApps()
+    }
+
+    private fun addTemplate(template: LauncherTemplate) {
+        launcherTemplates = launcherTemplates + template
+        repository.setTemplates(launcherTemplates)
+    }
+
+    private fun installTemplate(template: LauncherTemplate) {
+        launcherPages = template.pages
+        centerMode = template.centerMode
+        centerSize = template.centerSize
+        iconScale = template.iconScale
+        labelsVisible = template.labelsVisible
+        ambientBackdrop = template.ambientBackdrop
+        clockStyle = template.clockStyle
+        
+        repository.setPages(launcherPages)
+        repository.setSelectedCenterMode(centerMode)
+        repository.setSelectedCenterSize(centerSize)
+        repository.setIconScale(iconScale)
+        repository.setLabelsVisible(labelsVisible)
+        repository.setAmbientBackdrop(ambientBackdrop)
+        repository.setClockStyle(clockStyle)
+        
+        refreshPageApps()
+    }
+
+    private fun removeTemplate(id: String) {
+        launcherTemplates = launcherTemplates.filterNot { it.id == id }
+        repository.setTemplates(launcherTemplates)
     }
 
     private fun selectBuiltinWallpaper(wallpaper: BuiltinWallpaper) {
@@ -391,12 +428,13 @@ class MainActivity : ComponentActivity() {
 
     private fun refreshPageApps() {
         appsByPage = launcherPages.map { page ->
-            when (page.source) {
+            val list = when (page.source) {
                 RingMode.FAVORITES -> allApps.filter { repository.isFavorite(it.packageName) }
                 RingMode.MOST_USED -> repository.mostUsedApps(allApps)
                 RingMode.RECENT -> repository.recentApps(allApps)
                 RingMode.ALL_APPS -> allApps.sortedBy { it.label.lowercase() }
             }
+            list.take(page.appLimit)
         }
     }
 

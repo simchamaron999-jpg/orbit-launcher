@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.ui
+package com.sm.orbitlauncher.ui
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -78,20 +78,20 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.manus.orbitlauncher.data.AmbientBackdrop
-import com.manus.orbitlauncher.data.AppTrigger
-import com.manus.orbitlauncher.data.BuiltinWallpaper
-import com.manus.orbitlauncher.data.CenterAction
-import com.manus.orbitlauncher.data.CenterGesture
-import com.manus.orbitlauncher.data.CenterMode
-import com.manus.orbitlauncher.data.CenterSize
-import com.manus.orbitlauncher.data.IconScale
-import com.manus.orbitlauncher.data.LaunchableApp
-import com.manus.orbitlauncher.data.LauncherPage
-import com.manus.orbitlauncher.data.RingMode
-import com.manus.orbitlauncher.data.RotationSpeed
-import com.manus.orbitlauncher.data.VoiceUiState
-import com.manus.orbitlauncher.widget.OrbitWidgetHost
+import com.sm.orbitlauncher.data.AmbientBackdrop
+import com.sm.orbitlauncher.data.AppTrigger
+import com.sm.orbitlauncher.data.BuiltinWallpaper
+import com.sm.orbitlauncher.data.CenterAction
+import com.sm.orbitlauncher.data.CenterGesture
+import com.sm.orbitlauncher.data.CenterMode
+import com.sm.orbitlauncher.data.CenterSize
+import com.sm.orbitlauncher.data.IconScale
+import com.sm.orbitlauncher.data.LaunchableApp
+import com.sm.orbitlauncher.data.LauncherPage
+import com.sm.orbitlauncher.data.RingMode
+import com.sm.orbitlauncher.data.RotationSpeed
+import com.sm.orbitlauncher.data.VoiceUiState
+import com.sm.orbitlauncher.widget.OrbitWidgetHost
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -686,10 +686,10 @@ private fun responsivePodSize(
     labelsVisible: Boolean
 ): Float {
     if (appCount <= 1) return preferred
-    val spacingPx = if (labelsVisible) 14f else 10f
-    val availablePerApp = ((2f * PI.toFloat() * orbitRadiusPx) / appCount) - spacingPx
-    val densityFreeSize = availablePerApp / 3f
-    return min(preferred, densityFreeSize).coerceAtLeast(12f)
+    val spacingPx = if (labelsVisible) 16f else 10f
+    val circumference = 2f * PI.toFloat() * orbitRadiusPx
+    val maxPodSize = (circumference / appCount) - spacingPx
+    return min(preferred, maxPodSize).coerceAtLeast(32f)
 }
 
 private fun detectDarkWallpaper(

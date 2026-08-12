@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.voice
+package com.sm.orbitlauncher.voice
 
 import android.content.ComponentName
 import android.content.Context
@@ -7,7 +7,7 @@ import android.os.Build
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import com.manus.orbitlauncher.data.LaunchableApp
+import com.sm.orbitlauncher.data.LaunchableApp
 import java.text.Normalizer
 import java.util.Locale
 

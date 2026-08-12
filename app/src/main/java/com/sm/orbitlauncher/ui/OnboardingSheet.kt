@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.ui
+package com.sm.orbitlauncher.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

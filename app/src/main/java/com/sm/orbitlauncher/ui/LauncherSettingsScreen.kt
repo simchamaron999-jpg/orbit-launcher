@@ -1,4 +1,4 @@
-package com.manus.orbitlauncher.ui
+package com.sm.orbitlauncher.ui
 
 import android.widget.ImageView
 import androidx.activity.compose.BackHandler
@@ -55,28 +55,30 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.manus.orbitlauncher.data.AiProvider
-import com.manus.orbitlauncher.data.AmbientBackdrop
-import com.manus.orbitlauncher.data.AppearanceMode
-import com.manus.orbitlauncher.data.AppTrigger
-import com.manus.orbitlauncher.data.BuiltinWallpaper
-import com.manus.orbitlauncher.data.CenterAction
-import com.manus.orbitlauncher.data.CenterGesture
-import com.manus.orbitlauncher.data.CenterMode
-import com.manus.orbitlauncher.data.CenterSize
-import com.manus.orbitlauncher.data.ClockStyle
-import com.manus.orbitlauncher.data.IconScale
-import com.manus.orbitlauncher.data.LaunchableApp
-import com.manus.orbitlauncher.data.LauncherPage
-import com.manus.orbitlauncher.data.RingMode
-import com.manus.orbitlauncher.data.RotationSpeed
-import com.manus.orbitlauncher.data.WallpaperCategory
+import com.sm.orbitlauncher.data.AiProvider
+import com.sm.orbitlauncher.data.AmbientBackdrop
+import com.sm.orbitlauncher.data.AppearanceMode
+import com.sm.orbitlauncher.data.AppTrigger
+import com.sm.orbitlauncher.data.BuiltinWallpaper
+import com.sm.orbitlauncher.data.CenterAction
+import com.sm.orbitlauncher.data.CenterGesture
+import com.sm.orbitlauncher.data.CenterMode
+import com.sm.orbitlauncher.data.CenterSize
+import com.sm.orbitlauncher.data.ClockStyle
+import com.sm.orbitlauncher.data.IconScale
+import com.sm.orbitlauncher.data.LaunchableApp
+import com.sm.orbitlauncher.data.LauncherPage
+import com.sm.orbitlauncher.data.LauncherTemplate
+import com.sm.orbitlauncher.data.RingMode
+import com.sm.orbitlauncher.data.RotationSpeed
+import com.sm.orbitlauncher.data.WallpaperCategory
 
 private enum class SettingsCategory(val title: String) {
     QUICK("Quick"),
     AI("AI Engine"),
     GESTURES("Gestures"),
     APPS("Apps"),
+    TEMPLATES("Templates"),
     WALLPAPERS("Wallpapers"),
     WIDGETS("Widgets"),
     SYSTEM("System"),
@@ -101,7 +103,7 @@ fun LauncherSettingsScreen(
     builtinWallpaper: BuiltinWallpaper?,
     hasWallpaperPhoto: Boolean,
     hasWidget: Boolean,
-    tileWidgets: List<com.manus.orbitlauncher.data.WidgetTile>,
+    tileWidgets: List<com.sm.orbitlauncher.data.WidgetTile>,
     hasUsageAccess: Boolean,
     isFavorite: (LaunchableApp) -> Boolean,
     aiProvider: AiProvider,
@@ -129,12 +131,16 @@ fun LauncherSettingsScreen(
     onRemoveWidget: () -> Unit,
     onPickTileWidget: () -> Unit,
     onRemoveTileWidget: (Int) -> Unit,
-    onUpdateTileWidgets: (List<com.manus.orbitlauncher.data.WidgetTile>) -> Unit,
+    onUpdateTileWidgets: (List<com.sm.orbitlauncher.data.WidgetTile>) -> Unit,
     onToggleFavorite: (LaunchableApp) -> Unit,
     onAiProvider: (AiProvider) -> Unit,
     onAiApiKey: (String) -> Unit,
     onAiEndpoint: (String?) -> Unit,
     onClockStyle: (ClockStyle) -> Unit,
+    templates: List<LauncherTemplate>,
+    onAddTemplate: (LauncherTemplate) -> Unit,
+    onInstallTemplate: (LauncherTemplate) -> Unit,
+    onRemoveTemplate: (String) -> Unit,
     onRequestUsageAccess: () -> Unit,
     onRequestDefaultHome: () -> Unit
 ) {
@@ -253,6 +259,57 @@ fun LauncherSettingsScreen(
                         }
                     }
 
+                    SettingsCategory.TEMPLATES -> {
+                        item { SectionTitle("Community Templates") }
+                        item {
+                            Text(
+                                "Create, share, and install custom launcher layouts. Templates include page sources, visible app limits, and clock styles.",
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        item {
+                            OutlinedButton(
+                                onClick = {
+                                    onAddTemplate(LauncherTemplate(
+                                        id = "temp-${System.currentTimeMillis()}",
+                                        name = "My Layout ${templates.size + 1}",
+                                        pages = pages,
+                                        centerMode = centerMode,
+                                        centerSize = centerSize,
+                                        iconScale = iconScale,
+                                        labelsVisible = labelsVisible,
+                                        ambientBackdrop = ambientBackdrop,
+                                        clockStyle = clockStyle
+                                    ))
+                                },
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                            ) { Text("Save current as template") }
+                        }
+                        if (templates.isEmpty()) {
+                            item {
+                                Text(
+                                    "No custom templates saved yet.",
+                                    modifier = Modifier.padding(24.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                        items(templates, key = { it.id }) { template ->
+                            ListItem(
+                                headlineContent = { Text(template.name) },
+                                supportingContent = { Text("${template.pages.size} pages • ${template.ambientBackdrop.title}") },
+                                trailingContent = {
+                                    Row {
+                                        TextButton(onClick = { onInstallTemplate(template) }) { Text("Install") }
+                                        TextButton(onClick = { onRemoveTemplate(template.id) }) { Text("Delete") }
+                                    }
+                                }
+                            )
+                        }
+                    }
+
                     SettingsCategory.APPS -> {
                         item { SectionTitle("Home pages") }
                         item {
@@ -267,13 +324,24 @@ fun LauncherSettingsScreen(
                             ListItem(
                                 leadingContent = { Icon(Icons.Outlined.Apps, null) },
                                 headlineContent = { Text(page.name) },
-                                supportingContent = { Text(page.source.subtitle) },
+                                supportingContent = { Text("${page.source.subtitle} • Limit: ${page.appLimit}") },
                                 trailingContent = {
                                     if (pages.size > 1) {
                                         TextButton(onClick = { onRemovePage(page) }) { Text("Remove") }
                                     }
                                 }
                             )
+                            Row(Modifier.padding(horizontal = 24.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                Text("Visible apps: ", style = MaterialTheme.typography.bodySmall)
+                                listOf(8, 12, 16, 20, 24, 32).forEach { limit ->
+                                    FilterChip(
+                                        selected = page.appLimit == limit,
+                                        onClick = { onUpdatePage(page.copy(appLimit = limit)) },
+                                        label = { Text(limit.toString()) },
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                }
+                            }
                             ChoiceChips(RingMode.entries.toList(), page.source, { it.title }) { source ->
                                 onUpdatePage(page.copy(name = source.title, source = source))
                             }
@@ -381,7 +449,7 @@ fun LauncherSettingsScreen(
                         item {
                             ListItem(
                                 headlineContent = { Text("Version") },
-                                supportingContent = { Text("0.7") }
+                                supportingContent = { Text("0.7.2") }
                             )
                         }
                         item {
