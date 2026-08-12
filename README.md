@@ -1,14 +1,15 @@
-# Orbit Launcher 0.7.4
+# Orbit Launcher 0.7.5
 
 **Orbit Launcher** is an Android-only home launcher written in Kotlin and Jetpack Compose. It uses a Material You 3 interface to place launchable apps around a central clock or widget surface, with configurable pages, gestures, wallpapers, widgets, conventional voice launching, and optional BYOK AI assistance.
 
 ## Release highlights
 
-| Feature | Behaviour in 0.7.4 |
+| Feature | Behaviour in 0.7.5 |
 |---|---|
 | **Independent home pages** | Create up to eight swipeable pages. Each page can use **Recent**, **Most used**, **Favourites**, or **All apps** as its source. |
 | **Readable app density** | Every page has an explicit visible-app target: **8, 12, 16, 20, 24, or 32**. The orbit uses the selected limit before applying responsive icon sizing. |
-| **Control layout** | The top-right Customize control is now a gear. AI sits above the central clock, microphone and app search sit below it, and a four-icon navigation dock is positioned below the orbit. |
+| **Control layout** | The top-right Customize control is a gear. AI sits above the central clock, microphone and app search sit below it, and a four-icon navigation dock is positioned below the orbit. |
+| **Visual polish** | The home screen now uses a tighter orbit, lighter-weight icon pods, compact labelled capsules, stronger wallpaper scrims, and a more balanced central clock surface for clearer hierarchy on detailed photos. |
 | **Black orbit icons** | App marks and labels in the orbit use a consistent black monochrome treatment over light pods. |
 | **AI voice requests** | The sparkle button opens voice capture and sends the spoken request only to the BYOK provider configured by the user. App-launch replies are restricted to packages discovered on the device. |
 | **Supported BYOK providers** | OpenAI, Anthropic, Google Gemini, OpenRouter, and a custom **HTTPS** OpenAI-compatible endpoint. **OmniRoute is not offered.** |

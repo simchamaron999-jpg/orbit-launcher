@@ -95,7 +95,7 @@ fun OrbitHomeScreen(
         detectDarkWallpaper(context, builtinWallpaper, wallpaperUri, ambientBackdrop)
     }
     val controlTint = if (wallpaperIsDark) Color.White else Color(0xFF1A1C1E)
-    val controlContainer = if (wallpaperIsDark) Color.Black.copy(alpha = 0.32f) else Color.White.copy(alpha = 0.68f)
+    val controlContainer = if (wallpaperIsDark) Color.Black.copy(alpha = 0.56f) else Color.White.copy(alpha = 0.78f)
 
     LaunchedEffect(pageCount) {
         page = page.coerceIn(0, pageCount - 1)
@@ -172,7 +172,7 @@ fun OrbitHomeScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 42.dp, end = 20.dp)
-                .size(48.dp)
+                .size(46.dp)
                 .clip(CircleShape)
                 .background(controlContainer),
             onClick = onSettings
@@ -210,7 +210,7 @@ fun OrbitHomeScreen(
                 .padding(horizontal = 20.dp)
         ) {
             val shortestSide = if (maxWidth < maxHeight) maxWidth else maxHeight
-            val centralDiameter = shortestSide * 0.54f * centerSize.scale
+            val centralDiameter = shortestSide * 0.48f * centerSize.scale
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -367,12 +367,12 @@ private fun OrbitAppSlot(
         Surface(
             modifier = Modifier.size(podSize),
             shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.92f),
-                tonalElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.12f))
-
+            color = Color.White.copy(alpha = 0.84f),
+            shadowElevation = 6.dp,
+            tonalElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.52f))
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(podSize * 0.18f)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(podSize * 0.22f)) {
                 if (app.icon != null) {
                     AndroidView(factory = { context ->
                         android.widget.ImageView(context).apply {
@@ -385,15 +385,24 @@ private fun OrbitAppSlot(
             }
         }
         if (labelsVisible) {
-            Text(
-                text = app.label,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = Color.Black,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 4.dp).width(podSize * 1.2f)
-            )
+            Surface(
+                modifier = Modifier
+                    .padding(top = 5.dp)
+                    .widthIn(max = podSize * 1.25f),
+                shape = RoundedCornerShape(8.dp),
+                color = Color.White.copy(alpha = 0.74f),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.46f))
+            ) {
+                Text(
+                    text = app.label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
         }
     }
 }
@@ -451,8 +460,10 @@ private fun CentralSurface(
                 )
             },
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f),
-        tonalElevation = 8.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.88f),
+        shadowElevation = 18.dp,
+        tonalElevation = 10.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
     ) {
         Box(contentAlignment = Alignment.Center) {
             when (voiceState) {
@@ -490,7 +501,7 @@ private fun CentralSurface(
                                 text = time,
                                 style = MaterialTheme.typography.displayLarge.copy(
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 78.sp,
+                                    fontSize = 72.sp,
                                     letterSpacing = (-2).sp
                                 ),
                                 color = MaterialTheme.colorScheme.primary
@@ -521,15 +532,17 @@ private fun CentralSurface(
                 tint = Color(0xFF111111),
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-                    .background(Color.White.copy(alpha = 0.88f), CircleShape)
+                    .padding(top = 14.dp)
+                    .shadow(4.dp, CircleShape)
+                    .background(Color.White.copy(alpha = 0.92f), CircleShape)
             )
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 14.dp),
                 shape = CircleShape,
-                color = Color.White.copy(alpha = 0.88f),
+                color = Color.White.copy(alpha = 0.92f),
+                shadowElevation = 4.dp,
                 border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.Black.copy(alpha = 0.12f))
             ) {
                 Row(
@@ -554,9 +567,9 @@ private fun OrbitControlButton(
 ) {
     IconButton(
         onClick = onClick,
-        modifier = modifier.size(44.dp)
+        modifier = modifier.size(40.dp)
     ) {
-        Icon(icon, contentDescription, modifier = Modifier.size(22.dp), tint = tint.copy(alpha = 0.9f))
+        Icon(icon, contentDescription, modifier = Modifier.size(21.dp), tint = tint.copy(alpha = 0.9f))
     }
 }
 
@@ -644,7 +657,7 @@ private fun BuiltinWallpaperLayer(wallpaper: BuiltinWallpaper) {
             modifier = Modifier.fillMaxSize(),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop
         )
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
     }
 }
 
@@ -661,7 +674,7 @@ private fun UserWallpaperLayer(uri: String) {
             modifier = Modifier.fillMaxSize(),
             contentScale = androidx.compose.ui.layout.ContentScale.Crop
         )
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
     }
 }
 

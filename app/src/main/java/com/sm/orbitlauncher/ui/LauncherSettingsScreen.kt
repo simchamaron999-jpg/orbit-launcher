@@ -488,7 +488,7 @@ fun LauncherSettingsScreen(
                         item {
                             ListItem(
                                 headlineContent = { Text("Version") },
-                                supportingContent = { Text("0.7.4") }
+                                supportingContent = { Text("0.7.5") }
                             )
                         }
                         item {

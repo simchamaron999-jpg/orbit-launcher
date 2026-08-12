@@ -54,9 +54,9 @@ enum class AppTrigger(val title: String, val detail: String) {
 
 /** The density of the upper app halo. */
 enum class IconScale(val title: String, val podSizeDp: Int) {
-    COMPACT("Compact", 46),
-    COMFORTABLE("Comfortable", 56),
-    EXPRESSIVE("Expressive", 66)
+    COMPACT("Compact", 40),
+    COMFORTABLE("Comfortable", 50),
+    EXPRESSIVE("Expressive", 60)
 }
 
 /** Colour mode selected independently from the device setting. */
