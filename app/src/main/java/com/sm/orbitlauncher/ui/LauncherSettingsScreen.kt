@@ -242,40 +242,37 @@ fun LauncherSettingsScreen(
                     }
 
                     SettingsCategory.AI -> {
-                        item { SectionTitle("BYOK AI Engine") }
+                        item { SectionTitle("OpenRouter AI Engine") }
                         item {
                             Text(
-                                "Enter your own API key to unlock natural-language search, smart routines, and summaries. Keys are stored securely on-device.",
+                                "Orbit Launcher uses OpenRouter with the free & unlimited model (google/gemma-4-31b-it:free). Enter your OpenRouter API key below.",
                                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         item {
-                            ListItem(
-                                leadingContent = { Icon(Icons.Outlined.AutoAwesome, null) },
-                                headlineContent = { Text("Provider") },
-                                trailingContent = { Text(aiProvider.title, color = MaterialTheme.colorScheme.primary) }
-                            )
-                        }
-                        item { ChoiceChips(AiProvider.entries.toList(), aiProvider, { it.title }, onAiProvider) }
-                        item {
+                            val context = LocalContext.current
                             Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
                                 OutlinedTextField(
                                     value = aiApiKey,
                                     onValueChange = onAiApiKey,
-                                    label = { Text("API Key") },
+                                    label = { Text("OpenRouter API Key") },
                                     modifier = Modifier.fillMaxWidth(),
                                     visualTransformation = PasswordVisualTransformation()
                                 )
-                                if (aiProvider == AiProvider.CUSTOM) {
-                                    Spacer(Modifier.height(8.dp))
-                                    OutlinedTextField(
-                                        value = aiEndpoint ?: "",
-                                        onValueChange = onAiEndpoint,
-                                        label = { Text("Custom Endpoint URL") },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
+                                Spacer(Modifier.height(12.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            android.widget.Toast.makeText(context, "OpenRouter API Key saved successfully!", android.widget.Toast.LENGTH_SHORT).show()
+                                        }
+                                    ) {
+                                        Text("Save API Key")
+                                    }
                                 }
                             }
                         }

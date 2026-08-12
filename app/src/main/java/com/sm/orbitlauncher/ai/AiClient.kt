@@ -19,16 +19,8 @@ class AiClient(
 ) {
     suspend fun complete(prompt: String, systemPrompt: String? = null): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val url = if (provider == AiProvider.GOOGLE) {
-                URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey")
-            } else {
-                val endpoint = customEndpoint ?: provider.endpoint
-                    ?: return@withContext Result.failure(Exception("Endpoint not configured"))
-                if (!endpoint.startsWith("https://", ignoreCase = true)) {
-                    return@withContext Result.failure(Exception("AI endpoints must use HTTPS"))
-                }
-                URL("${endpoint.trimEnd('/')}/chat/completions")
-            }
+            val endpoint = "https://openrouter.ai/api/v1"
+            val url = URL("$endpoint/chat/completions")
 
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "POST"
@@ -36,15 +28,9 @@ class AiClient(
             connection.connectTimeout = 15_000
             connection.readTimeout = 30_000
             connection.setRequestProperty("Content-Type", "application/json")
-
-            when (provider) {
-                AiProvider.ANTHROPIC -> {
-                    connection.setRequestProperty("x-api-key", apiKey)
-                    connection.setRequestProperty("anthropic-version", "2023-06-01")
-                }
-                AiProvider.GOOGLE -> Unit
-                else -> connection.setRequestProperty("Authorization", "Bearer $apiKey")
-            }
+            connection.setRequestProperty("Authorization", "Bearer $apiKey")
+            connection.setRequestProperty("HTTP-Referer", "https://github.com/simchamaron999-jpg/orbit-launcher")
+            connection.setRequestProperty("X-Title", "Orbit Launcher")
 
             val body = buildRequestBody(prompt, systemPrompt)
             connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
@@ -101,7 +87,7 @@ class AiClient(
         }
         else -> {
             JSONObject().apply {
-                put("model", "gpt-4o")
+                put("model", "google/gemma-4-31b-it:free")
                 put(
                     "messages",
                     JSONArray().apply {
@@ -115,14 +101,5 @@ class AiClient(
         }
     }
 
-    private fun extractText(json: JSONObject): String = when (provider) {
-        AiProvider.GOOGLE -> json.getJSONArray("candidates")
-            .getJSONObject(0)
-            .getJSONObject("content")
-            .getJSONArray("parts")
-            .getJSONObject(0)
-            .getString("text")
-        AiProvider.ANTHROPIC -> json.getJSONArray("content").getJSONObject(0).getString("text")
-        else -> json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
-    }
+    private fun extractText(json: JSONObject): String = json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
 }

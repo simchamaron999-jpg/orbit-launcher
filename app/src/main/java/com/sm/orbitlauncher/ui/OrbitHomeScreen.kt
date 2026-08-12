@@ -307,13 +307,16 @@ private fun FullCircleOrbit(
         val shortest = min(widthPx, heightPx)
         val centre = Offset(widthPx / 2f, heightPx / 2f)
         val radius = shortest * (0.41f + (centerSize.scale - 1f) * 0.08f)
+        val appCount = maxOf(1, apps.size)
         val podSize = responsivePodSize(
             preferred = iconScale.podSizeDp.toFloat(),
-            appCount = apps.size,
+            appCount = appCount,
             orbitRadiusPx = radius,
             labelsVisible = labelsVisible
         ).dp
-        val labelHeight = if (labelsVisible) 18.dp else 0.dp
+        // When app count is very high (dense orbit), scale down label text and height dynamically to prevent overlap
+        val dynamicLabelFont = if (appCount > 20) 8.sp else 10.sp
+        val labelHeight = if (labelsVisible) (if (appCount > 20) 14.dp else 18.dp) else 0.dp
         val slotHeight = podSize + labelHeight
         apps.forEachIndexed { index, app ->
             val degrees = -90f + index * (360f / maxOf(1, apps.size)) + rotationDegrees
@@ -326,6 +329,7 @@ private fun FullCircleOrbit(
                 hapticsEnabled = hapticsEnabled,
                 labelsVisible = labelsVisible,
                 podSize = podSize,
+                labelFontSize = dynamicLabelFont,
                 modifier = Modifier
                     .offset {
                         IntOffset(
@@ -347,6 +351,7 @@ private fun OrbitAppSlot(
     hapticsEnabled: Boolean,
     labelsVisible: Boolean,
     podSize: Dp,
+    labelFontSize: androidx.compose.ui.unit.TextUnit,
     modifier: Modifier,
     onLaunch: () -> Unit
 ) {
@@ -395,12 +400,12 @@ private fun OrbitAppSlot(
             ) {
                 Text(
                     text = app.label,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = labelFontSize, fontWeight = FontWeight.SemiBold),
                     color = Color.Black,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                 )
             }
         }
