@@ -1,0 +1,1 @@
+Visual polish update: tighter app orbit, refined icon pods, improved label legibility, and a more balanced central clock surface. Includes automatic system wallpaper synchronization and expanded customization presets.

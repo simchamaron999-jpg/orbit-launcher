@@ -1,0 +1,12 @@
+Orbit Launcher is a native Android home launcher built with Kotlin and Jetpack Compose. It reimagines the home screen with a Material You 3 interface, placing your apps in a radial orbit around a central clock or widget surface.
+
+Key features:
+- **Radial App Orbit**: Swipe through your apps in a beautiful, circular layout.
+- **Material You 3**: Full support for dynamic color and modern Android design principles.
+- **Independent Pages**: Create multiple pages with different app sources (Recent, Most Used, Favorites, or All Apps).
+- **BYOK AI Assistance**: Connect your own AI provider (OpenAI, Anthropic, Google, OpenRouter) for natural-language app launching and smart routines.
+- **Customizable Gestures**: Configure tap, double-tap, and long-press actions on the central surface.
+- **Built-in Gallery**: A curated selection of portrait-native wallpapers with automatic system synchronization.
+- **Privacy First**: No developer API keys are embedded; your data and keys stay on your device.
+
+Orbit Launcher is designed for users who want a focused, aesthetic, and intelligent entry point to their Android experience.
