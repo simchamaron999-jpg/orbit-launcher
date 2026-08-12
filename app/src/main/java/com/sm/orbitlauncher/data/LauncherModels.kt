@@ -46,6 +46,12 @@ enum class CenterSize(val title: String, val scale: Float) {
     LARGE("Large", 1.16f)
 }
 
+/** User-visible layout behavior. Adaptive sizing is the professional default; Custom only adjusts density within safe bounds. */
+enum class HomeLayoutMode(val title: String, val subtitle: String) {
+    ADAPTIVE("Adaptive", "Fits your screen, controls, and app count automatically"),
+    CUSTOM("Custom", "Keeps the adaptive fit while letting you adjust density")
+}
+
 /** The activation rule for app targets; the centre long press remains reserved. */
 enum class AppTrigger(val title: String, val detail: String) {
     TAP("Tap", "Open an app with one touch"),

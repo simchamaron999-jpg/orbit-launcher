@@ -32,7 +32,7 @@ fun OnboardingSheet(onComplete: () -> Unit) {
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "Orbit is your minimal, circular home screen. Tap apps in the outer ring to launch them. Tap, double-tap, or long-press the central clock to access voice search, settings, and custom actions.",
+                text = "Orbit automatically fits its circular home to your device and app count. Tap apps in the outer ring to launch them, or open App Library to search every installed app. Tap, double-tap, or long-press the central clock for voice, settings, and custom actions.",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

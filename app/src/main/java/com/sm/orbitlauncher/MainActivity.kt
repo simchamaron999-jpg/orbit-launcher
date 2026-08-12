@@ -43,7 +43,9 @@ class MainActivity : ComponentActivity() {
     private var appsByPage by mutableStateOf<List<List<LaunchableApp>>>(emptyList())
     
     private var centerMode by mutableStateOf(CenterMode.CLOCK)
-    private var centerSize by mutableStateOf(CenterSize.BALANCED)
+    private var centerSize by mutableStateOf(CenterSize.BALANCED) // Retained for legacy templates only.
+    private var homeLayoutMode by mutableStateOf(HomeLayoutMode.ADAPTIVE)
+    private var homeDensity by mutableFloatStateOf(0f)
     private var centerActions by mutableStateOf<Map<CenterGesture, CenterAction>>(emptyMap())
     private var appTrigger by mutableStateOf(AppTrigger.TAP)
     private var rotationSpeed by mutableStateOf(RotationSpeed.BALANCED)
@@ -113,11 +115,11 @@ class MainActivity : ComponentActivity() {
                     appsByPage = appsByPage,
                     allApps = allApps,
                     centerMode = centerMode,
-                    centerSize = centerSize,
+                    homeLayoutMode = homeLayoutMode,
+                    homeDensity = homeDensity,
                     centerActions = centerActions,
                     appTrigger = appTrigger,
                     rotationSpeed = rotationSpeed,
-                    iconScale = iconScale,
                     labelsVisible = labelsVisible,
                     hapticsEnabled = hapticsEnabled,
                     ambientBackdrop = ambientBackdrop,
@@ -142,6 +144,8 @@ class MainActivity : ComponentActivity() {
                         pages = launcherPages,
                         centerMode = centerMode,
                         centerSize = centerSize,
+                        homeLayoutMode = homeLayoutMode,
+                        homeDensity = homeDensity,
                         centerActions = centerActions,
                         appTrigger = appTrigger,
                         rotationSpeed = rotationSpeed,
@@ -167,6 +171,8 @@ class MainActivity : ComponentActivity() {
                         onRemovePage = ::removePage,
                         onCenterMode = { mode -> centerMode = mode; repository.setSelectedCenterMode(mode) },
                         onCenterSize = { size -> centerSize = size; repository.setSelectedCenterSize(size) },
+                        onHomeLayoutMode = { mode -> homeLayoutMode = mode; repository.setHomeLayoutMode(mode) },
+                        onHomeDensity = { density -> homeDensity = density; repository.setHomeDensity(density) },
                         onCenterAction = { gesture, action ->
                             centerActions = centerActions + (gesture to action)
                             repository.setCenterAction(gesture, action)
@@ -255,6 +261,8 @@ class MainActivity : ComponentActivity() {
         launcherTemplates = repository.templates()
         centerMode = repository.selectedCenterMode()
         centerSize = repository.selectedCenterSize()
+        homeLayoutMode = repository.homeLayoutMode()
+        homeDensity = repository.homeDensity()
         centerActions = CenterGesture.entries.associateWith(repository::centerAction)
         appTrigger = repository.appTrigger()
         rotationSpeed = repository.rotationSpeed()

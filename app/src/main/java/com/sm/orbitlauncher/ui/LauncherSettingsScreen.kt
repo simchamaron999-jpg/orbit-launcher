@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Tune
@@ -43,6 +44,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Switch
@@ -72,6 +74,7 @@ import com.sm.orbitlauncher.data.CenterMode
 import com.sm.orbitlauncher.data.CenterSize
 import com.sm.orbitlauncher.data.ClockStyle
 import com.sm.orbitlauncher.data.IconScale
+import com.sm.orbitlauncher.data.HomeLayoutMode
 import com.sm.orbitlauncher.data.LaunchableApp
 import com.sm.orbitlauncher.data.LauncherPage
 import com.sm.orbitlauncher.data.LauncherTemplate
@@ -97,7 +100,9 @@ fun LauncherSettingsScreen(
     apps: List<LaunchableApp>,
     pages: List<LauncherPage>,
     centerMode: CenterMode,
-    centerSize: CenterSize,
+    centerSize: CenterSize, // Retained only for legacy layout templates.
+    homeLayoutMode: HomeLayoutMode,
+    homeDensity: Float,
     centerActions: Map<CenterGesture, CenterAction>,
     appTrigger: AppTrigger,
     rotationSpeed: RotationSpeed,
@@ -122,6 +127,8 @@ fun LauncherSettingsScreen(
     onRemovePage: (LauncherPage) -> Unit,
     onCenterMode: (CenterMode) -> Unit,
     onCenterSize: (CenterSize) -> Unit,
+    onHomeLayoutMode: (HomeLayoutMode) -> Unit,
+    onHomeDensity: (Float) -> Unit,
     onCenterAction: (CenterGesture, CenterAction) -> Unit,
     onAppTrigger: (AppTrigger) -> Unit,
     onRotationSpeed: (RotationSpeed) -> Unit,
@@ -196,10 +203,10 @@ fun LauncherSettingsScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 item { Spacer(Modifier.size(24.dp, 1.dp)) }
-                                item { PresetButton("Minimalist") { onIconScale(IconScale.EXPRESSIVE); onCenterSize(CenterSize.LARGE); onLabelsVisible(false) } }
-                                item { PresetButton("Balanced") { onIconScale(IconScale.COMFORTABLE); onCenterSize(CenterSize.BALANCED); onLabelsVisible(true) } }
-                                item { PresetButton("Dense") { onIconScale(IconScale.COMPACT); onCenterSize(CenterSize.SMALL); onLabelsVisible(false) } }
-                                item { PresetButton("Focus") { onIconScale(IconScale.EXPRESSIVE); onCenterSize(CenterSize.BALANCED); onLabelsVisible(false); onAmbientBackdrop(AmbientBackdrop.DUSK) } }
+                                item { PresetButton("Minimalist") { onHomeLayoutMode(HomeLayoutMode.ADAPTIVE); onLabelsVisible(false) } }
+                                item { PresetButton("Balanced") { onHomeLayoutMode(HomeLayoutMode.ADAPTIVE); onLabelsVisible(true) } }
+                                item { PresetButton("Dense") { onHomeLayoutMode(HomeLayoutMode.CUSTOM); onHomeDensity(-0.06f); onLabelsVisible(false) } }
+                                item { PresetButton("Focus") { onHomeLayoutMode(HomeLayoutMode.CUSTOM); onHomeDensity(0.04f); onLabelsVisible(false); onAmbientBackdrop(AmbientBackdrop.DUSK) } }
                                 item { PresetButton("Night") { onAppearanceMode(AppearanceMode.DARK); onAmbientBackdrop(AmbientBackdrop.ORBIT); onLabelsVisible(false) } }
                                 item { PresetButton("Bright") { onAppearanceMode(AppearanceMode.LIGHT); onAmbientBackdrop(AmbientBackdrop.CLAY); onLabelsVisible(true) } }
                                 item { Spacer(Modifier.size(24.dp, 1.dp)) }
@@ -217,12 +224,30 @@ fun LauncherSettingsScreen(
                         item {
                             ListItem(
                                 leadingContent = { Icon(Icons.Outlined.Tune, null) },
-                                headlineContent = { Text("Circle size") },
-                                trailingContent = { Text(centerSize.title, color = MaterialTheme.colorScheme.primary) }
+                                headlineContent = { Text("Home layout") },
+                                supportingContent = { Text("Orbit automatically fits your screen, controls, and app count") },
+                                trailingContent = { Text(homeLayoutMode.title, color = MaterialTheme.colorScheme.primary) }
                             )
                         }
-                        item { ChoiceChips(CenterSize.entries.toList(), centerSize, { it.title }, onCenterSize) }
-                        item { SettingSwitch("App names", "Hide for a minimal icon-only orbit", labelsVisible, onLabelsVisible) }
+                        item { ChoiceChips(HomeLayoutMode.entries.toList(), homeLayoutMode, { it.title }, onHomeLayoutMode) }
+                        if (homeLayoutMode == HomeLayoutMode.CUSTOM) {
+                            item {
+                                Column(Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                                    Text("Custom density", style = MaterialTheme.typography.labelLarge)
+                                    Text(
+                                        if (homeDensity >= 0f) "Spacious +${(homeDensity * 100).toInt()}%" else "Compact ${(homeDensity * 100).toInt()}%",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Slider(
+                                        value = homeDensity,
+                                        onValueChange = onHomeDensity,
+                                        valueRange = -0.10f..0.10f
+                                    )
+                                }
+                            }
+                        }
+                        item { SettingSwitch("App names", "Show persistent labels when there is room; reveal names on hold in dense orbits", labelsVisible, onLabelsVisible) }
                         item { SectionTitle("Quick customization") }
                         item {
                             ListItem(
@@ -412,13 +437,11 @@ fun LauncherSettingsScreen(
                         item { ChoiceChips(RotationSpeed.entries.toList(), rotationSpeed, { it.title }, onRotationSpeed) }
                         item {
                             ListItem(
-                                leadingContent = { Icon(Icons.Outlined.Apps, null) },
-                                headlineContent = { Text("Preferred icon size") },
-                                supportingContent = { Text("Automatically reduced on high-density pages") },
-                                trailingContent = { Text(iconScale.title, color = MaterialTheme.colorScheme.primary) }
+                                leadingContent = { Icon(Icons.Outlined.Search, null) },
+                                headlineContent = { Text("App Library and Search") },
+                                supportingContent = { Text("The grid App Library automatically adapts to your screen and provides full app-name search") }
                             )
                         }
-                        item { ChoiceChips(IconScale.entries.toList(), iconScale, { it.title }, onIconScale) }
                         item { SettingSwitch("Haptic feedback", "Vibrate on orbit interactions", hapticsEnabled, onHapticsEnabled) }
                     }
 

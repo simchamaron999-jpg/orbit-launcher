@@ -13,6 +13,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -35,6 +38,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -76,11 +80,11 @@ fun OrbitHomeScreen(
     appsByPage: List<List<LaunchableApp>>,
     allApps: List<LaunchableApp>,
     centerMode: CenterMode,
-    centerSize: CenterSize,
+    homeLayoutMode: HomeLayoutMode,
+    homeDensity: Float,
     centerActions: Map<CenterGesture, CenterAction>,
     appTrigger: AppTrigger,
     rotationSpeed: RotationSpeed,
-    iconScale: IconScale,
     labelsVisible: Boolean,
     hapticsEnabled: Boolean,
     ambientBackdrop: AmbientBackdrop,
@@ -130,6 +134,7 @@ fun OrbitHomeScreen(
     }
     val controlTint = orbitStyle.controlContent
     val controlContainer = orbitStyle.controlContainer
+    val effectiveDensity = if (homeLayoutMode == HomeLayoutMode.CUSTOM) homeDensity.coerceIn(-0.10f, 0.10f) else 0f
 
     LaunchedEffect(pageCount) {
         page = page.coerceIn(0, pageCount - 1)
@@ -152,8 +157,7 @@ fun OrbitHomeScreen(
             apps = activeApps,
             page = page,
             pageCount = pageCount,
-            centerSize = centerSize,
-            iconScale = iconScale,
+            homeDensity = effectiveDensity,
             labelsVisible = labelsVisible,
             appTrigger = appTrigger,
             hapticsEnabled = hapticsEnabled,
@@ -244,8 +248,11 @@ fun OrbitHomeScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
         ) {
-            val shortestSide = if (maxWidth < maxHeight) maxWidth else maxHeight
-            val centralDiameter = shortestSide * 0.48f * centerSize.scale
+            val safeWidth = (maxWidth - 40.dp).coerceAtLeast(240.dp)
+            val safeHeight = (maxHeight - 156.dp).coerceAtLeast(240.dp)
+            val compositionSide = if (safeWidth < safeHeight) safeWidth else safeHeight
+            val centralRatio = (0.46f + effectiveDensity * 0.10f).coerceIn(0.42f, 0.50f)
+            val centralDiameter = compositionSide * centralRatio
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -305,8 +312,7 @@ private fun FullCircleOrbit(
     apps: List<LaunchableApp>,
     page: Int,
     pageCount: Int,
-    centerSize: CenterSize,
-    iconScale: IconScale,
+    homeDensity: Float,
     labelsVisible: Boolean,
     appTrigger: AppTrigger,
     hapticsEnabled: Boolean,
@@ -323,6 +329,7 @@ private fun FullCircleOrbit(
         label = "full orbit rotation"
     )
 
+    val density = LocalDensity.current
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -341,13 +348,17 @@ private fun FullCircleOrbit(
     ) {
         val widthPx = constraints.maxWidth.toFloat()
         val heightPx = constraints.maxHeight.toFloat()
-        val shortest = min(widthPx, heightPx)
+        val reservedVerticalPx = with(density) { 156.dp.toPx() }
+        val horizontalGutterPx = with(density) { 40.dp.toPx() }
+        val usableHeightPx = (heightPx - reservedVerticalPx).coerceAtLeast(widthPx * 0.52f)
+        val compositionSidePx = min(widthPx - horizontalGutterPx, usableHeightPx)
         val centre = Offset(widthPx / 2f, heightPx / 2f)
-        val radius = shortest * (0.41f + (centerSize.scale - 1f) * 0.08f)
+        val radiusRatio = (0.405f + homeDensity.coerceIn(-0.10f, 0.10f) * 0.055f).coerceIn(0.38f, 0.43f)
+        val radius = compositionSidePx * radiusRatio
         val appCount = maxOf(1, apps.size)
         val denseOrbit = appCount > DENSE_ORBIT_APP_THRESHOLD
         val podSize = responsivePodSize(
-            preferred = iconScale.podSizeDp.toFloat(),
+            preferred = 52f + homeDensity.coerceIn(-0.10f, 0.10f) * 120f,
             appCount = appCount,
             orbitRadiusPx = radius,
             labelsVisible = labelsVisible
@@ -761,47 +772,133 @@ private fun AppSearchSheet(
     onLaunch: (LaunchableApp) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
-    val filtered = remember(query, apps) {
-        if (query.isBlank()) emptyList()
-        else apps.filter { it.label.contains(query, ignoreCase = true) }
+    val sortedApps = remember(apps) { apps.sortedBy { it.label.lowercase(Locale.getDefault()) } }
+    val filtered = remember(query, sortedApps) {
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.isBlank()) sortedApps
+        else sortedApps.filter { it.label.contains(normalizedQuery, ignoreCase = true) }
     }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 8.dp
+        tonalElevation = 3.dp
     ) {
-        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.8f).padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.88f)
+                .padding(horizontal = 20.dp)
+        ) {
+            Text(
+                text = "App Library",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = "Search your apps or browse the full library",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
             TextField(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search apps...") },
-                leadingIcon = { Icon(Icons.Outlined.Search, null) },
-                shape = CircleShape,
+                placeholder = { Text("Search your apps") },
+                leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = "Search apps") },
+                singleLine = true,
+                shape = MaterialTheme.shapes.extraLarge,
                 colors = TextFieldDefaults.colors(
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 )
             )
-            Spacer(Modifier.height(16.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                items(filtered) { app ->
-                    ListItem(
-                        headlineContent = { Text(app.label) },
-                        leadingContent = {
-                            if (app.icon != null) {
-                                AndroidView(factory = { context ->
-                                    android.widget.ImageView(context).apply {
-                                        setImageDrawable(app.icon)
-                                    }
-                                }, modifier = Modifier.size(40.dp))
+            Text(
+                text = if (query.isBlank()) "${sortedApps.size} installed apps" else "${filtered.size} matching apps",
+                modifier = Modifier.padding(top = 10.dp, bottom = 8.dp),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (filtered.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.SearchOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text("No apps match \"${query.trim()}\"", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Try a different app name.",
+                        modifier = Modifier.padding(top = 4.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 84.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 28.dp)
+                ) {
+                    items(filtered, key = { it.stableId }) { app ->
+                        AppLibraryItem(app = app, onLaunch = { onLaunch(app) })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppLibraryItem(app: LaunchableApp, onLaunch: () -> Unit) {
+    Surface(
+        onClick = onLaunch,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 1.dp
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest
+            ) {
+                if (app.icon != null) {
+                    AndroidView(
+                        factory = { context ->
+                            android.widget.ImageView(context).apply {
+                                setImageDrawable(app.icon)
+                                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                             }
                         },
-                        modifier = Modifier.clickable { onLaunch(app) }
+                        modifier = Modifier.padding(8.dp).fillMaxSize()
                     )
                 }
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = app.label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

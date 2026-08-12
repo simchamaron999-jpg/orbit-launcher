@@ -167,6 +167,14 @@ class LauncherRepository(private val context: Context) {
     fun selectedCenterSize(): CenterSize = runCatching { CenterSize.valueOf(prefs.getString(KEY_CENTER_SIZE, CenterSize.BALANCED.name)!!) }.getOrDefault(CenterSize.BALANCED)
     fun setSelectedCenterSize(size: CenterSize) = prefs.edit().putString(KEY_CENTER_SIZE, size.name).apply()
 
+    fun homeLayoutMode(): HomeLayoutMode = runCatching {
+        HomeLayoutMode.valueOf(prefs.getString(KEY_HOME_LAYOUT_MODE, HomeLayoutMode.ADAPTIVE.name)!!)
+    }.getOrDefault(HomeLayoutMode.ADAPTIVE)
+    fun setHomeLayoutMode(mode: HomeLayoutMode) = prefs.edit().putString(KEY_HOME_LAYOUT_MODE, mode.name).apply()
+
+    fun homeDensity(): Float = prefs.getFloat(KEY_HOME_DENSITY, 0f).coerceIn(-0.10f, 0.10f)
+    fun setHomeDensity(density: Float) = prefs.edit().putFloat(KEY_HOME_DENSITY, density.coerceIn(-0.10f, 0.10f)).apply()
+
     fun centerAction(gesture: CenterGesture): CenterAction = runCatching { CenterAction.valueOf(prefs.getString("gesture_${gesture.name}", CenterAction.NONE.name)!!) }.getOrDefault(CenterAction.NONE)
     fun setCenterAction(gesture: CenterGesture, action: CenterAction) = prefs.edit().putString("gesture_${gesture.name}", action.name).apply()
 
@@ -232,6 +240,8 @@ class LauncherRepository(private val context: Context) {
         private const val MAX_PAGE_COUNT = 8
         private const val KEY_CENTER_MODE = "center_mode"
         private const val KEY_CENTER_SIZE = "center_size"
+        private const val KEY_HOME_LAYOUT_MODE = "home_layout_mode"
+        private const val KEY_HOME_DENSITY = "home_density"
         private const val KEY_APP_TRIGGER = "app_trigger"
         private const val KEY_ROTATION_SPEED = "rotation_speed"
         private const val KEY_ICON_SCALE = "icon_scale"
