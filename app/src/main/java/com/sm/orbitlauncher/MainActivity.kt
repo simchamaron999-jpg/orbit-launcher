@@ -97,9 +97,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val controller = WindowCompat.getInsetsController(window, window.decorView)
-        controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        hideSystemBars()
         
         repository = LauncherRepository(applicationContext)
         widgetHost = OrbitWidgetHost(applicationContext, repository)
@@ -217,6 +215,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            window.decorView.postDelayed({ hideSystemBars() }, 120L)
+        }
+    }
+
+    private fun hideSystemBars() {
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+        controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     }
 
     override fun onResume() {

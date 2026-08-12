@@ -151,6 +151,11 @@ fun LauncherSettingsScreen(
 ) {
     var currentCategory by remember { mutableStateOf(SettingsCategory.QUICK) }
     val context = LocalContext.current
+    val isDefaultHome = remember(context) {
+        val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val resolvedHome = context.packageManager.resolveActivity(homeIntent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+        resolvedHome?.activityInfo?.packageName == context.packageName
+    }
     fun openExternal(uri: String) {
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
@@ -451,12 +456,22 @@ fun LauncherSettingsScreen(
 
                     SettingsCategory.SYSTEM -> {
                         item { SectionTitle("Orbit System") }
-                        item {
-                            ListItem(
-                                leadingContent = { Icon(Icons.Outlined.Home, null) },
-                                headlineContent = { Text("Set as default home") },
-                                trailingContent = { Button(onClick = onRequestDefaultHome) { Text("Set") } }
-                            )
+                        if (!isDefaultHome) {
+                            item {
+                                ListItem(
+                                    leadingContent = { Icon(Icons.Outlined.Home, null) },
+                                    headlineContent = { Text("Set as default home") },
+                                    trailingContent = { Button(onClick = onRequestDefaultHome) { Text("Set") } }
+                                )
+                            }
+                        } else {
+                            item {
+                                ListItem(
+                                    leadingContent = { Icon(Icons.Outlined.Home, null) },
+                                    headlineContent = { Text("Default Launcher") },
+                                    supportingContent = { Text("Orbit Launcher is currently active as your default home.") }
+                                )
+                            }
                         }
                         item {
                             ListItem(

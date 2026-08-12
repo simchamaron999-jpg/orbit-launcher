@@ -382,7 +382,6 @@ private fun OrbitAppSlot(
                     AndroidView(factory = { context ->
                         android.widget.ImageView(context).apply {
                             setImageDrawable(app.icon)
-                            setColorFilter(android.graphics.Color.BLACK, android.graphics.PorterDuff.Mode.SRC_IN)
                             scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
                         }
                     }, modifier = Modifier.fillMaxSize())
