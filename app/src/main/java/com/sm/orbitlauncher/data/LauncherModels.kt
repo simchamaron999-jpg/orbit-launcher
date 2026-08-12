@@ -107,13 +107,9 @@ enum class RotationSpeed(val title: String, val durationMs: Int) {
     QUICK("Quick", 230)
 }
 
-/** AI Provider for the BYOK engine. */
+/** The single BYOK provider used by Orbit's AI engine. */
 enum class AiProvider(val title: String, val endpoint: String?) {
-    OPENAI("OpenAI", "https://api.openai.com/v1"),
-    ANTHROPIC("Anthropic", "https://api.anthropic.com/v1"),
-    GOOGLE("Google Gemini", null),
-    OPENROUTER("OpenRouter", "https://openrouter.ai/api/v1"),
-    CUSTOM("Custom Endpoint", null)
+    OPENROUTER("OpenRouter", "https://openrouter.ai/api/v1")
 }
 
 /** Clock styles for the central orbit. */

@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
     private var usageAccess by mutableStateOf(false)
     private var searchRequestToken by mutableIntStateOf(0)
     
-    private var aiProvider by mutableStateOf(AiProvider.OPENAI)
+    private var aiProvider by mutableStateOf(AiProvider.OPENROUTER)
     private var aiApiKey by mutableStateOf("")
     private var aiEndpoint by mutableStateOf<String?>(null)
     private var clockStyle by mutableStateOf(ClockStyle.EXPRESSIVE)

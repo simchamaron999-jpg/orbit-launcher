@@ -53,53 +53,19 @@ class AiClient(
         }
     }
 
-    private fun buildRequestBody(prompt: String, systemPrompt: String?): String = when (provider) {
-        AiProvider.GOOGLE -> {
-            JSONObject().apply {
-                put(
-                    "contents",
-                    JSONArray().put(
-                        JSONObject().put(
-                            "parts",
-                            JSONArray().put(
-                                JSONObject().put("text", listOfNotNull(systemPrompt, prompt).joinToString("\n\n"))
-                            )
-                        )
-                    )
-                )
-            }.toString()
-        }
-        AiProvider.ANTHROPIC -> {
-            JSONObject().apply {
-                put("model", "claude-3-5-sonnet-20240620")
-                put("max_tokens", 512)
-                systemPrompt?.takeIf { it.isNotBlank() }?.let { put("system", it) }
-                put(
-                    "messages",
-                    JSONArray().put(
-                        JSONObject().apply {
-                            put("role", "user")
-                            put("content", prompt)
-                        }
-                    )
-                )
-            }.toString()
-        }
-        else -> {
-            JSONObject().apply {
-                put("model", "google/gemma-4-31b-it:free")
-                put(
-                    "messages",
-                    JSONArray().apply {
-                        systemPrompt?.takeIf { it.isNotBlank() }?.let { instruction ->
-                            put(JSONObject().put("role", "system").put("content", instruction))
-                        }
-                        put(JSONObject().put("role", "user").put("content", prompt))
+    private fun buildRequestBody(prompt: String, systemPrompt: String?): String =
+        JSONObject().apply {
+            put("model", "google/gemma-4-31b-it:free")
+            put(
+                "messages",
+                JSONArray().apply {
+                    systemPrompt?.takeIf { it.isNotBlank() }?.let { instruction ->
+                        put(JSONObject().put("role", "system").put("content", instruction))
                     }
-                )
-            }.toString()
-        }
-    }
+                    put(JSONObject().put("role", "user").put("content", prompt))
+                }
+            )
+        }.toString()
 
     private fun extractText(json: JSONObject): String = json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
 }

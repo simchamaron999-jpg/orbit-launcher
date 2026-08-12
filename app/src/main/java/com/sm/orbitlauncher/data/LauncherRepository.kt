@@ -212,8 +212,8 @@ class LauncherRepository(private val context: Context) {
         prefs.edit().putString(KEY_TILE_WIDGETS, JSONArray(ids).toString()).apply()
     }
 
-    fun aiProvider(): AiProvider = runCatching { AiProvider.valueOf(prefs.getString(KEY_AI_PROVIDER, AiProvider.OPENAI.name)!!) }.getOrDefault(AiProvider.OPENAI)
-    fun setAiProvider(provider: AiProvider) = prefs.edit().putString(KEY_AI_PROVIDER, provider.name).apply()
+    fun aiProvider(): AiProvider = AiProvider.OPENROUTER
+    fun setAiProvider(provider: AiProvider) = prefs.edit().putString(KEY_AI_PROVIDER, AiProvider.OPENROUTER.name).apply()
 
     fun aiApiKey(): String = prefs.getString(KEY_AI_API_KEY, "") ?: ""
     fun setAiApiKey(key: String) = prefs.edit().putString(KEY_AI_API_KEY, key).apply()
