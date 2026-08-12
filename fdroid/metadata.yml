@@ -1,0 +1,14 @@
+Categories:
+  - System
+License: Apache-2.0
+WebSite: https://github.com/simchamaron999-jpg/orbit-launcher
+SourceCode: https://github.com/simchamaron999-jpg/orbit-launcher
+IssueTracker: https://github.com/simchamaron999-jpg/orbit-launcher/issues
+
+Maintainer: Simcha Maron <simchamaronapp@gmail.app>
+
+Name: Orbit Launcher
+Summary: Material You 3 Android Launcher with Radial Navigation and BYOK AI
+Description: |-
+  Orbit Launcher is a minimal, beautiful, and distraction-free Android home launcher built with Material You 3 design.
+  Features a unique radial app orbit, swappable central widgets, voice/AI integration, and extensive customisation.
